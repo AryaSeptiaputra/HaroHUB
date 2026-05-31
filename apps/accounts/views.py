@@ -45,8 +45,37 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    addresses = request.user.addresses.all().order_by('-is_default', 'recipient_name')
-    return render(request, 'accounts/profile.html', {'addresses': addresses})
+    from apps.recommendations.models import Wishlist
+
+    addresses     = request.user.addresses.all().order_by('-is_default', 'recipient_name')
+    recent_orders = (request.user.orders
+                     .prefetch_related('items')
+                     .order_by('-created_at')[:5])
+    wishlist_preview = (Wishlist.objects
+                        .filter(user=request.user)
+                        .select_related('product__grade')
+                        .prefetch_related('product__images')
+                        .order_by('-created_at')[:4])
+    wishlist_count = Wishlist.objects.filter(user=request.user).count()
+
+    return render(request, 'accounts/profile.html', {
+        'addresses':       addresses,
+        'recent_orders':   recent_orders,
+        'wishlist_preview': wishlist_preview,
+        'wishlist_count':  wishlist_count,
+    })
+
+
+@login_required
+def wishlist_view(request):
+    from apps.recommendations.models import Wishlist
+
+    items = (Wishlist.objects
+             .filter(user=request.user)
+             .select_related('product__grade', 'product__series__timeline')
+             .prefetch_related('product__images')
+             .order_by('-created_at'))
+    return render(request, 'accounts/wishlist.html', {'wishlist_items': items})
 
 
 @login_required

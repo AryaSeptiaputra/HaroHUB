@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load harohub_extras %}
+
+{% block title %}Wishlist Saya — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'accounts:profile' %}" class="text-sm text-gray-400 hover:text-gray-600">← Profil</a>
+  </div>
+
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">
+    Wishlist Saya
+    {% if wishlist_items %}
+      <span class="text-base font-normal text-gray-400 ml-2">{{ wishlist_items|length }} produk</span>
+    {% endif %}
+  </h1>
+
+  {% if wishlist_items %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for item in wishlist_items %}
+    {% with product=item.product %}
+    <div class="group relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-blue-300 transition-all">
+
+      {# Remove button — overlay, terpisah dari link agar HTML valid #}
+      <form method="post" action="{% url 'recommendations:wishlist_toggle' product.id %}"
+            class="absolute top-2 right-2 z-10">
+        {% csrf_token %}
+        <button type="submit" title="Hapus dari wishlist"
+                class="w-8 h-8 rounded-full bg-white/90 border border-gray-200 text-red-500
+                       flex items-center justify-center hover:bg-red-50 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </form>
+
+      <a href="{% url 'catalog:detail' product.slug %}" class="block">
+        <div class="aspect-square bg-gray-100 overflow-hidden">
+          {% with img=product.primary_image %}
+          {% if img %}
+            <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-gray-200">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/>
+              </svg>
+            </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        <div class="p-3">
+          <span class="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+            {{ product.grade.name }}
+          </span>
+          <h3 class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug my-1.5 group-hover:text-blue-600">
+            {{ product.name }}
+          </h3>
+          <p class="text-sm font-semibold text-blue-700">{{ product.price|rupiah }}</p>
+        </div>
+      </a>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="text-center py-20 bg-white rounded-xl border border-gray-200">
+    <svg class="w-16 h-16 mx-auto mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+    </svg>
+    <p class="text-gray-500 font-medium">Wishlist kamu kosong</p>
+    <p class="text-sm text-gray-400 mt-1">Simpan produk favoritmu untuk dibeli nanti.</p>
+    <a href="/" class="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700 transition">
+      Jelajahi Katalog
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

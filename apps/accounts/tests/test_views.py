@@ -107,6 +107,44 @@ class ProfileViewTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, u.email)
 
+    def test_shows_wishlist_and_order_sections(self):
+        u = make_user()
+        self.client.force_login(u)
+        r = self.client.get('/accounts/profile/')
+        self.assertContains(r, 'Wishlist Saya')
+        self.assertContains(r, 'Pesanan Terakhir')
+
+
+class WishlistPageTest(TestCase):
+    def _make_product(self):
+        from apps.catalog.models import Grade, Product, Series, Timeline
+        tl, _ = Timeline.objects.get_or_create(slug='uc', defaults={'name': 'UC'})
+        sr, _ = Series.objects.get_or_create(slug='sr', defaults={'name': 'SR', 'timeline': tl})
+        gr, _ = Grade.objects.get_or_create(slug='hg', defaults={'name': 'HG', 'scale': '1/144'})
+        return Product.objects.create(
+            slug='hg-zaku', name='HG Zaku', grade=gr, series=sr, price=100000, stock=5,
+        )
+
+    def test_requires_login(self):
+        r = self.client.get('/accounts/wishlist/')
+        self.assertRedirects(r, '/accounts/login/?next=/accounts/wishlist/')
+
+    def test_empty_state(self):
+        u = make_user()
+        self.client.force_login(u)
+        r = self.client.get('/accounts/wishlist/')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'kosong')
+
+    def test_shows_wishlisted_product(self):
+        from apps.recommendations.models import Wishlist
+        u = make_user()
+        self.client.force_login(u)
+        product = self._make_product()
+        Wishlist.objects.create(user=u, product=product)
+        r = self.client.get('/accounts/wishlist/')
+        self.assertContains(r, 'HG Zaku')
+
 
 class ProfileEditViewTest(TestCase):
     def setUp(self):
