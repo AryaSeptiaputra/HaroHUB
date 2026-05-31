@@ -1,4 +1,13 @@
-// Tutup autocomplete saat klik di luar
+// ── HTMX: kirim CSRF token otomatis di setiap request ──
+document.addEventListener('htmx:configRequest', function (e) {
+  const token = document.cookie
+    .split('; ')
+    .find(r => r.startsWith('csrftoken='))
+    ?.split('=')[1];
+  if (token) e.detail.headers['X-CSRFToken'] = token;
+});
+
+// ── Tutup autocomplete saat klik di luar ──
 document.addEventListener('click', function (e) {
   const dropdown = document.getElementById('search-dropdown');
   if (dropdown && !e.target.closest('#nav-search')) {
@@ -6,7 +15,7 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// Hapus satu query param dari URL saat ini
+// ── Hapus satu query param dari URL saat ini ──
 function removeParam(param, value) {
   const url = new URL(window.location.href);
   if (value !== undefined && value !== null) {
@@ -20,7 +29,6 @@ function removeParam(param, value) {
   window.location.href = url.href;
 }
 
-// Reset semua filter
 function resetFilters() {
   window.location.href = '/';
 }

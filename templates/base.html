@@ -42,17 +42,16 @@
 
         <div class="flex items-center gap-4 text-sm">
           {% if user.is_authenticated %}
-            <a href="/cart/" class="relative flex items-center gap-1 text-gray-700 hover:text-blue-600">
+            <a href="{% url 'cart:index' %}" class="relative flex items-center gap-1 text-gray-700 hover:text-blue-600">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m4-9v9m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
               Keranjang
-              {% if cart_count > 0 %}
-                <span class="bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {{ cart_count }}
-                </span>
-              {% endif %}
+              <span id="cart-badge"
+                    class="{% if cart_count == 0 %}hidden{% endif %} bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {{ cart_count }}
+              </span>
             </a>
             <a href="{% url 'accounts:profile' %}" class="text-gray-700 hover:text-blue-600">
               {{ user.first_name|default:user.email }}

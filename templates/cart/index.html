@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load harohub_extras %}
+
+{% block title %}Keranjang Belanja — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">
+    Keranjang Belanja
+    {% if items %}
+      <span class="text-base font-normal text-gray-400 ml-2">{{ items|length }} produk</span>
+    {% endif %}
+  </h1>
+
+  <div id="cart-content">
+    {% include 'partials/_cart_body.html' %}
+  </div>
+
+</div>
+{% endblock %}

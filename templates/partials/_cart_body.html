@@ -1,0 +1,135 @@
+{% load harohub_extras %}
+{% if items %}
+  <div class="space-y-3">
+    {% for item in items %}
+    <div class="flex items-center gap-4 bg-white rounded-xl border border-gray-200 p-4
+                {% if item.product.status == 'DISCONTINUED' %}opacity-60{% endif %}">
+
+      {# Thumbnail #}
+      <a href="{% url 'produk:detail' item.product.slug %}"
+         class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+        {% with img=item.product.primary_image %}
+        {% if img %}
+          <img src="{{ img.image.url }}" alt="{{ item.product.name }}"
+               class="w-full h-full object-cover">
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01"/>
+            </svg>
+          </div>
+        {% endif %}
+        {% endwith %}
+      </a>
+
+      {# Info #}
+      <div class="flex-1 min-w-0">
+        <a href="{% url 'produk:detail' item.product.slug %}"
+           class="text-sm font-medium text-gray-800 hover:text-blue-600 line-clamp-2">
+          {{ item.product.name }}
+        </a>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+            {{ item.product.grade.name }}
+          </span>
+          {% if item.product.status == 'DISCONTINUED' %}
+            <span class="text-xs text-red-500">Produk tidak tersedia</span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-gray-400 mt-0.5">{{ item.product.price|rupiah }} / unit</p>
+      </div>
+
+      {# Quantity Controls (HTMX) #}
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <form hx-post="{% url 'cart:update' item.id %}"
+              hx-target="#cart-content"
+              hx-swap="innerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}">
+          <button type="submit"
+                  class="w-7 h-7 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 text-sm flex items-center justify-center">
+            −
+          </button>
+        </form>
+
+        <span class="w-8 text-center text-sm font-semibold text-gray-800">
+          {{ item.quantity }}
+        </span>
+
+        <form hx-post="{% url 'cart:update' item.id %}"
+              hx-target="#cart-content"
+              hx-swap="innerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}">
+          <button type="submit"
+                  class="w-7 h-7 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 text-sm flex items-center justify-center"
+                  {% if item.product.status == 'ACTIVE' and item.quantity >= item.product.stock %}
+                  disabled class="opacity-40 cursor-not-allowed"
+                  {% endif %}>
+            +
+          </button>
+        </form>
+      </div>
+
+      {# Subtotal #}
+      <div class="text-right flex-shrink-0 w-24">
+        <p class="text-sm font-semibold text-blue-700">{{ item.subtotal|rupiah }}</p>
+      </div>
+
+      {# Remove #}
+      <form hx-post="{% url 'cart:remove' item.id %}"
+            hx-target="#cart-content"
+            hx-swap="innerHTML">
+        {% csrf_token %}
+        <button type="submit"
+                class="text-gray-300 hover:text-red-500 transition flex-shrink-0"
+                title="Hapus">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </form>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Order Summary #}
+  <div class="mt-4 bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="font-semibold text-gray-800 mb-3">Ringkasan Pesanan</h2>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between text-gray-600">
+        <span>Subtotal ({{ items|length }} produk)</span>
+        <span>{{ cart.total|rupiah }}</span>
+      </div>
+      <div class="flex justify-between text-gray-400">
+        <span>Ongkos kirim</span>
+        <span class="italic text-xs">Dihitung saat checkout</span>
+      </div>
+      <div class="border-t border-gray-100 pt-2 flex justify-between font-semibold text-gray-900">
+        <span>Total</span>
+        <span class="text-blue-700">{{ cart.total|rupiah }}</span>
+      </div>
+    </div>
+    <a href="/order/checkout/"
+       class="block w-full mt-4 text-center bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition">
+      Lanjut ke Checkout →
+    </a>
+  </div>
+
+{% else %}
+  {# Empty state #}
+  <div class="text-center py-20 bg-white rounded-xl border border-gray-200">
+    <svg class="w-16 h-16 mx-auto mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m4-9v9m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+    <p class="text-gray-500 font-medium">Keranjang kamu kosong</p>
+    <p class="text-sm text-gray-400 mt-1">Yuk, temukan Gunpla favoritmu!</p>
+    <a href="/" class="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700 transition">
+      Jelajahi Katalog
+    </a>
+  </div>
+{% endif %}
