@@ -77,14 +77,18 @@ def detail_view(request, slug):
         slug=slug,
     )
 
+    is_wishlisted = False
     if request.user.is_authenticated:
+        from apps.rekomendasi.models import Wishlist
         from apps.rekomendasi.services import record_event
         record_event(request.user, product, 'VIEW')
+        is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
 
     return render(request, 'produk/detail.html', {
         'product': product,
         'images': list(product.images.all()),
         'primary_image': product.images.filter(is_primary=True).first(),
+        'is_wishlisted': is_wishlisted,
     })
 
 

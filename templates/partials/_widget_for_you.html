@@ -1,0 +1,17 @@
+{% if products %}
+<div class="mt-12">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-gray-800">
+      {% if source == 'personalized' %}Untuk Kamu{% else %}Produk Populer{% endif %}
+    </h2>
+    {% if source == 'popular' %}
+      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Belum ada histori • menampilkan populer</span>
+    {% endif %}
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+    {% for product in products %}
+      {% include 'partials/_product_card.html' %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

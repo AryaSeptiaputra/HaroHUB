@@ -1,0 +1,21 @@
+{% if user.is_authenticated %}
+<form hx-post="{% url 'rekomendasi:wishlist_toggle' product.id %}"
+      hx-target="this"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+  <button type="submit"
+          class="flex items-center gap-1.5 px-4 py-2.5 border rounded-xl text-sm transition
+                 {% if is_wishlisted %}
+                   border-red-300 text-red-600 bg-red-50 hover:bg-red-100
+                 {% else %}
+                   border-gray-300 text-gray-600 hover:border-red-300 hover:text-red-500
+                 {% endif %}">
+    <svg class="w-4 h-4" fill="{% if is_wishlisted %}currentColor{% else %}none{% endif %}"
+         stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+    </svg>
+    {% if is_wishlisted %}Diwishlist{% else %}Wishlist{% endif %}
+  </button>
+</form>
+{% endif %}

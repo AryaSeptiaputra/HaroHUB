@@ -265,6 +265,15 @@
   </div>{# end main #}
 </div>
 
+{# F-29 / F-30: Untuk Kamu / Populer — lazy-loaded via HTMX #}
+{% if not has_filters %}
+<div hx-get="{% url 'rekomendasi:widget_for_you' %}"
+     hx-trigger="load"
+     hx-swap="outerHTML">
+  <div class="mt-12 animate-pulse h-24 bg-gray-100 rounded-xl"></div>
+</div>
+{% endif %}
+
 <script>
 // Enable series select when timeline is selected, disable when cleared
 document.addEventListener('htmx:afterSwap', function(e) {

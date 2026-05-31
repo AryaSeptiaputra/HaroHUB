@@ -1,0 +1,29 @@
+{% load harohub_extras %}
+{# Reusable product card — context var: product #}
+<a href="{% url 'produk:detail' product.slug %}"
+   class="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-blue-300 transition-all">
+  <div class="aspect-square bg-gray-100 overflow-hidden">
+    {% with img=product.primary_image %}
+    {% if img %}
+      <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}"
+           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+    {% else %}
+      <div class="w-full h-full flex items-center justify-center text-gray-200">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/>
+        </svg>
+      </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+  <div class="p-3">
+    <span class="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+      {{ product.grade.name }}
+    </span>
+    <h3 class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug my-1.5 group-hover:text-blue-600">
+      {{ product.name }}
+    </h3>
+    <p class="text-sm font-semibold text-blue-700">{{ product.price|rupiah }}</p>
+  </div>
+</a>

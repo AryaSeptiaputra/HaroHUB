@@ -101,14 +101,14 @@
       {% endif %}
     </div>
 
-    {# Add to cart — placeholder #}
+    {# Add to cart + Wishlist #}
     {% if user.is_authenticated %}
       {% if product.status == 'ACTIVE' and product.stock > 0 %}
-        <form method="post" action="/cart/add/{{ product.id }}/">
+        <form method="post" action="{% url 'cart:add' product.id %}">
           {% csrf_token %}
-          <div class="flex gap-3 mb-4">
+          <div class="flex gap-3 mb-3">
             <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}"
-                   class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:ring-2 focus:ring-blue-500">
+                   class="w-20 border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-center focus:ring-2 focus:ring-blue-500">
             <button type="submit"
                     class="flex-1 bg-blue-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-blue-700 transition">
               Tambah ke Keranjang
@@ -116,18 +116,24 @@
           </div>
         </form>
       {% elif product.status == 'PRE_ORDER' %}
-        <button class="w-full bg-orange-500 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-orange-600 transition mb-4">
-          Pre-order Sekarang
-        </button>
+        <form method="post" action="{% url 'cart:add' product.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit"
+                  class="w-full bg-orange-500 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-orange-600 transition mb-3">
+            Pre-order Sekarang
+          </button>
+        </form>
       {% else %}
         <button disabled
-                class="w-full bg-gray-200 text-gray-500 py-2.5 px-6 rounded-xl font-semibold text-sm mb-4 cursor-not-allowed">
+                class="w-full bg-gray-200 text-gray-500 py-2.5 px-6 rounded-xl font-semibold text-sm mb-3 cursor-not-allowed">
           Stok Habis
         </button>
       {% endif %}
+      {% include 'partials/_wishlist_btn.html' %}
     {% else %}
       <a href="{% url 'accounts:login' %}?next={{ request.path }}"
-         class="block text-center w-full bg-blue-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-blue-700 transition mb-4">
+         class="block text-center w-full bg-blue-600 text-white py-2.5 px-6 rounded-xl font-semibold text-sm hover:bg-blue-700 transition mb-3">
         Masuk untuk Membeli
       </a>
     {% endif %}
@@ -152,10 +158,11 @@
   </div>
 </div>
 
-{# Placeholder untuk widget rekomendasi (F-28, F-29) #}
-<div class="mt-16">
-  <h2 class="text-lg font-semibold text-gray-800 mb-4">Produk Serupa</h2>
-  <p class="text-sm text-gray-400 italic">Widget rekomendasi — diimplementasikan bersama modul rekomendasi.</p>
+{# F-28: Produk Serupa — lazy-loaded via HTMX #}
+<div hx-get="{% url 'rekomendasi:widget_similar' product.id %}"
+     hx-trigger="load"
+     hx-swap="outerHTML">
+  <div class="mt-16 animate-pulse h-24 bg-gray-100 rounded-xl"></div>
 </div>
 
 <script>
