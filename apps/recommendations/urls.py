@@ -2,7 +2,7 @@ from django.urls import path
 
 from . import views
 
-app_name = 'rekomendasi'
+app_name = 'recommendations'
 
 urlpatterns = [
     path('widget/similar/<int:product_id>/', views.widget_similar, name='widget_similar'),

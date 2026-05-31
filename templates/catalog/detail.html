@@ -159,7 +159,7 @@
 </div>
 
 {# F-28: Produk Serupa — lazy-loaded via HTMX #}
-<div hx-get="{% url 'rekomendasi:widget_similar' product.id %}"
+<div hx-get="{% url 'recommendations:widget_similar' product.id %}"
      hx-trigger="load"
      hx-swap="outerHTML">
   <div class="mt-16 animate-pulse h-24 bg-gray-100 rounded-xl"></div>

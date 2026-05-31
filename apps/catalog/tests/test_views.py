@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.produk.models import Grade, Product, ProductStatus, Series, Timeline
+from apps.catalog.models import Grade, Product, ProductStatus, Series, Timeline
 
 
 def make_product(name='Test Kit', status='ACTIVE', stock=5):
@@ -47,13 +47,13 @@ class DetailViewTest(TestCase):
         self.product = make_product('RG Char Zaku')
 
     def test_detail_ok(self):
-        r = self.client.get(f'/produk/{self.product.slug}/')
+        r = self.client.get(f'/catalog/{self.product.slug}/')
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'RG Char Zaku')
 
     def test_discontinued_returns_404(self):
         p = make_product('Disc Kit', status='DISCONTINUED')
-        r = self.client.get(f'/produk/{p.slug}/')
+        r = self.client.get(f'/catalog/{p.slug}/')
         self.assertEqual(r.status_code, 404)
 
 
@@ -62,15 +62,15 @@ class SearchAutocompleteTest(TestCase):
         make_product('HG Unicorn Gundam')
 
     def test_empty_query_returns_empty(self):
-        r = self.client.get('/produk/search/?q=a')
+        r = self.client.get('/catalog/search/?q=a')
         self.assertEqual(r.status_code, 200)
         self.assertNotContains(r, 'Unicorn')
 
     def test_two_char_query_returns_results(self):
-        r = self.client.get('/produk/search/?q=Un')
+        r = self.client.get('/catalog/search/?q=Un')
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'Unicorn')
 
     def test_no_match(self):
-        r = self.client.get('/produk/search/?q=XXXNOTEXIST')
+        r = self.client.get('/catalog/search/?q=XXXNOTEXIST')
         self.assertEqual(r.status_code, 200)

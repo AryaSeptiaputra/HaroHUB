@@ -1,5 +1,5 @@
 {% if user.is_authenticated %}
-<form hx-post="{% url 'rekomendasi:wishlist_toggle' product.id %}"
+<form hx-post="{% url 'recommendations:wishlist_toggle' product.id %}"
       hx-target="this"
       hx-swap="outerHTML">
   {% csrf_token %}

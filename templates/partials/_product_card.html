@@ -1,6 +1,6 @@
 {% load harohub_extras %}
 {# Reusable product card — context var: product #}
-<a href="{% url 'produk:detail' product.slug %}"
+<a href="{% url 'catalog:detail' product.slug %}"
    class="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-blue-300 transition-all">
   <div class="aspect-square bg-gray-100 overflow-hidden">
     {% with img=product.primary_image %}

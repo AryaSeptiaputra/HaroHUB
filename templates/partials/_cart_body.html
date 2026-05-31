@@ -6,7 +6,7 @@
                 {% if item.product.status == 'DISCONTINUED' %}opacity-60{% endif %}">
 
       {# Thumbnail #}
-      <a href="{% url 'produk:detail' item.product.slug %}"
+      <a href="{% url 'catalog:detail' item.product.slug %}"
          class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
         {% with img=item.product.primary_image %}
         {% if img %}
@@ -25,7 +25,7 @@
 
       {# Info #}
       <div class="flex-1 min-w-0">
-        <a href="{% url 'produk:detail' item.product.slug %}"
+        <a href="{% url 'catalog:detail' item.product.slug %}"
            class="text-sm font-medium text-gray-800 hover:text-blue-600 line-clamp-2">
           {{ item.product.name }}
         </a>

@@ -108,7 +108,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order   = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey('produk.Product', on_delete=models.PROTECT, related_name='order_items')
+    product = models.ForeignKey('catalog.Product', on_delete=models.PROTECT, related_name='order_items')
 
     # Snapshot — dibekukan saat order dibuat
     product_name      = models.CharField(max_length=200)

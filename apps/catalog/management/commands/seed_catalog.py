@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
-from apps.produk.models import Grade, Product, ProductStatus, Series, Timeline
+from apps.catalog.models import Grade, Product, ProductStatus, Series, Timeline
 
 
 TIMELINES = [

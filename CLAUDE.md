@@ -22,13 +22,16 @@ python manage.py runserver
 python manage.py migrate
 python manage.py createsuperuser   # email-based, bukan username
 
-# Recommendation engine (batch job)
-python manage.py compute_recommendations
+# Seed data (urutan penting)
+python manage.py seed_catalog      # products, grades, timelines, series
+python manage.py seed_shipping     # flat-rate shipping per city
+python manage.py seed_events       # synthetic behavior events (demo)
+python manage.py compute_recommendations  # compute F-28/F-29/F-30 tables
 
 # Testing
 python manage.py test
 python manage.py test apps.order.tests.test_state_machine   # satu file
-python manage.py test apps.rekomendasi.tests.test_engine    # tanpa database
+python manage.py test apps.recommendations.tests.test_engine  # tanpa database
 
 # Settings
 DJANGO_SETTINGS_MODULE=config.settings.development   # default dev
@@ -55,45 +58,55 @@ DRF berperan sebagai **endpoint JSON untuk HTMX** (autocomplete, widget rekomend
 ### Project Structure
 
 ```
-config/          # project package (bukan app)
+config/              # project package
   settings/
     base.py          # shared config, membaca DATABASE_URL
     development.py   # DEBUG=True, fallback SQLite
     production.py    # PostgreSQL, whitenoise, django-storages
 
 apps/
-  core/          # abstract models & mixins — tidak punya views/urls/migrations
-  common/        # validators, generators, templatetags, context_processors, exceptions
-  accounts/      # User(AbstractUser), Address
-  produk/        # Product, ProductImage, Grade, Timeline, Series
-  cart/          # Cart, CartItem — paling ramping, tanpa services.py
-  order/         # Order (state machine), OrderItem, ShippingRate, Payment + services.py
-  rekomendasi/   # engine/ (Python murni) + services.py (serve) + management command
+  core/              # abstract models & mixins — no views/urls/migrations
+  common/            # validators, generators, templatetags, context_processors, exceptions
+  accounts/          # User(AbstractUser), Address
+  catalog/           # Product, ProductImage, Grade, Timeline, Series
+  cart/              # Cart, CartItem — no services.py
+  order/             # Order (state machine), OrderItem, ShippingRate, Payment + services.py
+  recommendations/   # engine/ (pure Python) + services.py (serve) + management commands
 
 templates/
   base.html
-  partials/      # global HTMX fragments: _<fitur>_<bagian>.html (prefix underscore)
-  <app>/         # halaman utuh per app
+  partials/          # global HTMX fragments: _<feature>_<section>.html
+  <app>/             # full-page templates per app
 
 static/
-  src/input.css  # sumber kebenaran Tailwind
-  css/output.css # hasil generate (gitignored)
+  src/input.css      # Tailwind source
+  css/output.css     # generated output (gitignored)
   js/app.js
 ```
+
+### URL Namespaces
+
+| App | Namespace | Example |
+|---|---|---|
+| `catalog` | `catalog` | `{% url 'catalog:detail' slug %}` |
+| `recommendations` | `recommendations` | `{% url 'recommendations:widget_similar' id %}` |
+| `cart` | `cart` | `{% url 'cart:index' %}` |
+| `order` | `order` | `{% url 'order:checkout' %}` |
+| `accounts` | `accounts` | `{% url 'accounts:login' %}` |
 
 ### Dependency Direction
 
 ```
-core / common  ◄── (leaf, diimpor semua, tidak pernah impor balik)
+core / common  ◄── (leaf — imported by all, never imports back)
       ▲
   accounts
       ▲
-   produk
+   catalog
       ▲
-cart / order / rekomendasi
+cart / order / recommendations
 ```
 
-FK lintas-app wajib pakai **lazy string** (`'produk.Product'`). Service call dipanggil **di dalam fungsi view**, bukan di import level atas — mencegah circular import.
+FK lintas-app wajib pakai **lazy string** (`'catalog.Product'`). Service call dipanggil **di dalam fungsi view**, bukan di import level atas — mencegah circular import.
 
 ### Recommendation Engine (3-Layer CQRS-lite)
 
@@ -104,42 +117,40 @@ Wishlist            management command        UserRecommendation (F-29)
                     transaction.atomic        ProductPopularity (F-30)
 ```
 
-- **`engine/`** — Python murni, zero ORM coupling. Menerima `dataclass` (dari `types.py`), mengembalikan skor. Bisa di-unit-test tanpa database.
-- **Weights disuntikkan dari `settings.py`**, tidak pernah diimpor dari dalam `engine/`.
-- Tabel serve bersifat disposable: `CASCADE`, `FloatField`, dibangun ulang tiap batch run.
-- Cold-start fallback (F-30) ada di `services.py`, bukan `engine/`.
+- **`engine/`** — pure Python, zero ORM coupling. Receives `dataclass` (from `types.py`), returns scores. Unit-testable without database.
+- **Weights injected from `settings.py`**, never imported inside `engine/`.
+- Serve tables are disposable: `CASCADE`, `FloatField`, rebuilt every batch run.
+- Cold-start fallback (F-30) lives in `services.py`, not `engine/`.
 
 ### Order State Machine
 
-Semua perubahan status order **wajib** lewat `Order.transition_to()`. Admin (F-21) memanggil method ini, bukan set `status` mentah. Transisi yang sah:
+All order status changes **must** go through `Order.transition_to()`. Admin (F-21) calls this method — never sets `status` directly. Valid transitions:
 
 ```
 PENDING → PAID → PROCESSING → SHIPPED → COMPLETED
 PENDING/PAID/PROCESSING → CANCELLED
 ```
 
-`Payment.status = PAID` adalah satu-satunya pemicu `Order PENDING → PAID`.
+`Payment.status = PAID` is the only trigger for `Order PENDING → PAID`.
 
 ### Key Model Decisions
 
-- **`Cart`** tidak menyimpan harga (dibaca live). **`OrderItem`** membekukan harga/nama/foto saat checkout.
-- **`Order.shipping_*`** adalah snapshot alamat (Address mutable & bisa dihapus user).
-- **`BehaviorEvent`** adalah append-only log. Tidak ada UPDATE/DELETE.
-- **`BehaviorEvent`** adalah sumber sinyal terpadu (VIEW/WISHLIST/PURCHASE), termasuk menerima PURCHASE yang juga ada di `OrderItem` — duplikasi ini disengaja.
-- **`weight`** tidak disimpan di `BehaviorEvent` — bobot adalah hyperparameter di `settings.py`, diterapkan saat compute, bukan saat capture.
+- **`Cart`** does not store price (read live). **`OrderItem`** freezes price/name/image at checkout.
+- **`Order.shipping_*`** is a snapshot of the address (Address is mutable and deletable).
+- **`BehaviorEvent`** is an append-only log. No UPDATE/DELETE.
+- **`BehaviorEvent`** is the unified signal log (VIEW/WISHLIST/PURCHASE). PURCHASE duplicates `OrderItem` — intentional (two purposes, two homes).
+- **`weight`** is not stored in `BehaviorEvent` — it is a hyperparameter in `settings.py`, applied at compute time, not capture time.
 
 ## Database Portability Rules (SQLite → PostgreSQL)
 
-Selama development, jaga portabilitas agar migrasi ke prod mulus:
-
-- **Dilarang:** `ArrayField`, `SearchVector`, semua field dari `django.contrib.postgres`
-- **`JSONField` boleh** tapi hindari query-by-key yang berat
-- **`LIKE` search** — case-insensitive di SQLite, case-sensitive di PostgreSQL; test ulang di prod
-- **`db.sqlite3` di `.gitignore`** — jangan commit
+- **Forbidden:** `ArrayField`, `SearchVector`, anything from `django.contrib.postgres`
+- **`JSONField` allowed** but avoid heavy query-by-key
+- **`LIKE` search** — case-insensitive in SQLite, case-sensitive in PostgreSQL; test again in prod
+- **`db.sqlite3` in `.gitignore`** — do not commit
 
 ## Settings Configuration
 
-Hyperparameter rekomendasi disimpan di `settings.py` (bukan database) agar bisa di-tune lalu di-recompute:
+Recommendation engine hyperparameters live in `settings.py` (not DB) so they can be tuned and recomputed:
 
 ```python
 RECOMMENDATION_WEIGHTS = {'VIEW': 1, 'WISHLIST': 3, 'PURCHASE': 5}
@@ -149,28 +160,28 @@ SIMILARITY_TOP_K = 30
 RECOMMENDATION_TOP_N = 12
 ```
 
-`RECOMMENDATION_DIMENSION_WEIGHTS` dan `SIMILARITY_WEIGHTS` memiliki nilai yang sama tapi **tetap dua key terpisah** — operasi berbeda, layak di-tune independen.
+`RECOMMENDATION_DIMENSION_WEIGHTS` and `SIMILARITY_WEIGHTS` share the same values but are **two separate keys** — different operations, may be tuned independently.
 
-## Domain Knowledge (Wajib Dibaca untuk Fitur Produk/Rekomendasi)
+## Domain Knowledge (Required for Product/Recommendation Features)
 
-> Lihat `docs/01-domain-knowledge.md` sebelum mengerjakan fitur apapun yang berhubungan dengan produk, kategori, filter, atau sistem rekomendasi.
+> Read `docs/01-domain-knowledge.md` before working on any feature involving products, categories, filters, or the recommendation system.
 
-Nilai enum yang harus konsisten di seluruh codebase:
+Enum values that must be consistent throughout the codebase:
 
 ```python
 product.grade        → "EG"|"HG"|"RG"|"MG"|"PG"|"SD"|"MetalBuild"|"FigureRise"
 product.timeline_id  → "UC"|"AC"|"CE"|"AD"|"PD"|"AS"|"BF"|"SD"
-product.series       → string bebas (contoh: "Gundam SEED")
+product.series       → free string (e.g. "Gundam SEED")
 ```
 
-Hierarchy: `Series → Timeline` (series adalah turunan timeline). `product.timeline_id` **tidak disimpan langsung di Product** — diturunkan via `product.series.timeline`.
+Hierarchy: `Series → Timeline` (series is a child of timeline). `product.timeline_id` is **not stored directly on Product** — derived via `product.series.timeline`.
 
 ## AppConfig
 
-Setiap app harus memiliki `AppConfig.name = 'apps.<nama>'` (eksplisit, karena berada di bawah paket `apps/`).
+Every app must have `AppConfig.name = 'apps.<name>'` (explicit, because apps live under the `apps/` package).
 
 ## Feature Scope
 
-**MVP (21 fitur)** harus selesai untuk demo end-to-end. Yang sengaja di-skip: reset password (F-09), Midtrans real (F-14), RajaOngkir real (F-15), kode promo (F-23). Payment dan shipping menggunakan **simulasi mock**.
+**MVP (21 features)** complete. Deliberately skipped: password reset (F-09), Midtrans real (F-14), RajaOngkir real (F-15), promo codes (F-23). Payment and shipping use **mock simulation**.
 
-Lihat `docs/02-feature-map.md` untuk daftar lengkap fitur dan `docs/03-mvp-feature-specifications.md` untuk acceptance criteria per fitur.
+See `docs/02-feature-map.md` for the full feature list and `docs/03-mvp-feature-specifications.md` for acceptance criteria.

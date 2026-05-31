@@ -4,7 +4,7 @@ from apps.accounts.models import Address, User
 from apps.cart.models import Cart, CartItem
 from apps.order.models import Order, OrderStatus, PaymentMethod, ShippingRate
 from apps.order.services import checkout
-from apps.produk.models import Grade, Product, Series, Timeline
+from apps.catalog.models import Grade, Product, Series, Timeline
 
 
 def setup_world(email='v@t.id'):

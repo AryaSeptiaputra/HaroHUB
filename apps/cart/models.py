@@ -23,7 +23,7 @@ class Cart(TimeStampedModel):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(
-        'produk.Product', on_delete=models.CASCADE, related_name='+'
+        'catalog.Product', on_delete=models.CASCADE, related_name='+'
     )
     quantity = models.PositiveIntegerField(default=1)
     added_at = models.DateTimeField(auto_now_add=True)

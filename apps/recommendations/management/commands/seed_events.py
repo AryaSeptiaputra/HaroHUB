@@ -2,8 +2,8 @@
 from django.core.management.base import BaseCommand
 
 from apps.accounts.models import User
-from apps.produk.models import Product
-from apps.rekomendasi.models import BehaviorEvent
+from apps.catalog.models import Product
+from apps.recommendations.models import BehaviorEvent
 
 # (email, password, preferensi) — universe/grade yang disukai untuk filter produk
 DEMO_PROFILES = [

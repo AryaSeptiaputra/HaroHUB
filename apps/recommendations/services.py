@@ -1,4 +1,4 @@
-from apps.produk.models import ProductStatus
+from apps.catalog.models import ProductStatus
 
 from .models import (
     BehaviorEvent, EventType, ProductPopularity,

@@ -1,9 +1,9 @@
 from django.test import SimpleTestCase
 
-from apps.rekomendasi.engine.types import ProductAttrs, Event
-from apps.rekomendasi.engine.similarity import pair_score, compute_similarities
-from apps.rekomendasi.engine.profile import build_profile, score_products
-from apps.rekomendasi.engine.popularity import compute_popularity
+from apps.recommendations.engine.types import ProductAttrs, Event
+from apps.recommendations.engine.similarity import pair_score, compute_similarities
+from apps.recommendations.engine.profile import build_profile, score_products
+from apps.recommendations.engine.popularity import compute_popularity
 
 WEIGHTS = {'series': 3, 'timeline': 2, 'grade': 1}
 EVENT_WEIGHTS = {'VIEW': 1, 'WISHLIST': 3, 'PURCHASE': 5}

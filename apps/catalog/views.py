@@ -57,7 +57,7 @@ def listing_view(request):
     }
     has_filters = any([grade_slugs, timeline_slug, series_slug, price_min, price_max, availability, q])
 
-    return render(request, 'produk/listing.html', {
+    return render(request, 'catalog/listing.html', {
         'page_obj': page_obj,
         'grades': Grade.objects.all(),
         'timelines': Timeline.objects.all(),
@@ -79,12 +79,12 @@ def detail_view(request, slug):
 
     is_wishlisted = False
     if request.user.is_authenticated:
-        from apps.rekomendasi.models import Wishlist
-        from apps.rekomendasi.services import record_event
+        from apps.recommendations.models import Wishlist
+        from apps.recommendations.services import record_event
         record_event(request.user, product, 'VIEW')
         is_wishlisted = Wishlist.objects.filter(user=request.user, product=product).exists()
 
-    return render(request, 'produk/detail.html', {
+    return render(request, 'catalog/detail.html', {
         'product': product,
         'images': list(product.images.all()),
         'primary_image': product.images.filter(is_primary=True).first(),

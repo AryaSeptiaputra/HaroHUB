@@ -12,7 +12,7 @@ class EventType(models.TextChoices):
 class BehaviorEvent(models.Model):
     """Append-only event log. Tidak ada UPDATE/DELETE (kecuali pruning lama)."""
     user       = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='behavior_events')
-    product    = models.ForeignKey('produk.Product', on_delete=models.CASCADE, related_name='behavior_events')
+    product    = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='behavior_events')
     event_type = models.CharField(max_length=20, choices=EventType.choices)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -29,7 +29,7 @@ class BehaviorEvent(models.Model):
 class Wishlist(models.Model):
     """Current-state wishlist — terpisah dari event log."""
     user    = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='wishlist_items')
-    product = models.ForeignKey('produk.Product', on_delete=models.CASCADE, related_name='+')
+    product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -46,8 +46,8 @@ class Wishlist(models.Model):
 
 class ProductSimilarity(models.Model):
     """F-28: top-K produk serupa per source. Dibangun ulang tiap batch run."""
-    source_product = models.ForeignKey('produk.Product', on_delete=models.CASCADE, related_name='similar_to')
-    target_product = models.ForeignKey('produk.Product', on_delete=models.CASCADE, related_name='+')
+    source_product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='similar_to')
+    target_product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='+')
     score          = models.FloatField()
     computed_at    = models.DateTimeField(auto_now_add=True)
 
@@ -65,7 +65,7 @@ class ProductSimilarity(models.Model):
 class UserRecommendation(models.Model):
     """F-29: top-N produk per user. Dibangun ulang tiap batch run."""
     user    = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='recommendations')
-    product = models.ForeignKey('produk.Product', on_delete=models.CASCADE, related_name='+')
+    product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, related_name='+')
     score   = models.FloatField()
     reason  = models.CharField(max_length=120, blank=True)
     computed_at = models.DateTimeField(auto_now_add=True)
@@ -81,7 +81,7 @@ class UserRecommendation(models.Model):
 
 class ProductPopularity(models.Model):
     """F-30: skor popularitas global. OneToOne karena satu baris per produk."""
-    product     = models.OneToOneField('produk.Product', on_delete=models.CASCADE, related_name='popularity')
+    product     = models.OneToOneField('catalog.Product', on_delete=models.CASCADE, related_name='popularity')
     score       = models.FloatField()
     computed_at = models.DateTimeField(auto_now_add=True)
 

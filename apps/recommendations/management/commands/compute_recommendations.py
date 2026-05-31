@@ -5,12 +5,12 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.order.models import OrderItem, OrderStatus
-from apps.produk.models import Product, ProductStatus
-from apps.rekomendasi.engine.popularity import compute_popularity
-from apps.rekomendasi.engine.profile import build_profile, score_products
-from apps.rekomendasi.engine.similarity import compute_similarities
-from apps.rekomendasi.engine.types import Event, ProductAttrs
-from apps.rekomendasi.models import (
+from apps.catalog.models import Product, ProductStatus
+from apps.recommendations.engine.popularity import compute_popularity
+from apps.recommendations.engine.profile import build_profile, score_products
+from apps.recommendations.engine.similarity import compute_similarities
+from apps.recommendations.engine.types import Event, ProductAttrs
+from apps.recommendations.models import (
     BehaviorEvent, ProductPopularity, ProductSimilarity, UserRecommendation,
 )
 

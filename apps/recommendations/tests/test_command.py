@@ -2,8 +2,8 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from apps.accounts.models import User
-from apps.produk.models import Grade, Product, Series, Timeline
-from apps.rekomendasi.models import (
+from apps.catalog.models import Grade, Product, Series, Timeline
+from apps.recommendations.models import (
     BehaviorEvent, ProductPopularity, ProductSimilarity, UserRecommendation,
 )
 

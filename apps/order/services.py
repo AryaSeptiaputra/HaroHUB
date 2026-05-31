@@ -83,7 +83,7 @@ def confirm_payment(payment, transaction_ref=''):
     payment.order.transition_to(OrderStatus.PAID)
 
     # Emit PURCHASE event ke recommendation engine
-    from apps.rekomendasi.services import record_event
+    from apps.recommendations.services import record_event
     for item in payment.order.items.select_related('product'):
         record_event(payment.order.user, item.product, 'PURCHASE')
 

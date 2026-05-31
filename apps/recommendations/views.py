@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.produk.models import Product
+from apps.catalog.models import Product
 
 from .services import (
     get_popular_products, get_similar_products,

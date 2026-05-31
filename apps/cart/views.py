@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 
-from apps.produk.models import Product, ProductStatus
+from apps.catalog.models import Product, ProductStatus
 
 from .models import Cart, CartItem
 

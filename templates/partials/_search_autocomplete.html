@@ -3,7 +3,7 @@
 <ul class="py-1">
   {% for product in products %}
   <li>
-    <a href="/produk/{{ product.slug }}/"
+    <a href="{% url 'catalog:detail' product.slug %}"
        class="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 transition">
       {# Thumbnail 40×40 #}
       <div class="w-10 h-10 flex-shrink-0 rounded bg-gray-100 overflow-hidden">

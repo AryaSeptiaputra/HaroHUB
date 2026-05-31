@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from apps.accounts.models import User
-from apps.produk.models import Grade, Product, Series, Timeline
+from apps.catalog.models import Grade, Product, Series, Timeline
 from apps.cart.models import Cart, CartItem
 
 

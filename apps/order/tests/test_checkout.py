@@ -5,7 +5,7 @@ from apps.cart.models import Cart, CartItem
 from apps.common.exceptions import CheckoutError
 from apps.order.models import Order, OrderStatus, PaymentMethod, PaymentStatus, ShippingRate
 from apps.order.services import cancel_order, checkout, confirm_payment
-from apps.produk.models import Grade, Product, Series, Timeline
+from apps.catalog.models import Grade, Product, Series, Timeline
 
 
 def make_user(email='buyer@t.id'):
