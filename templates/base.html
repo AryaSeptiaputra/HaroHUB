@@ -5,56 +5,93 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}HaroHUB{% endblock %}</title>
+  {% if debug %}
+  <script src="https://cdn.tailwindcss.com"></script>
+  {% else %}
   <link rel="stylesheet" href="/static/css/output.css">
+  {% endif %}
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-gray-50 text-gray-900">
+<body class="min-h-screen bg-gray-50 text-gray-900 font-sans">
 
-  <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
-        <a href="/" class="text-xl font-bold text-blue-600">HaroHUB</a>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-8">
+          <a href="/" class="text-xl font-bold text-blue-600 tracking-tight">HaroHUB</a>
+          <div class="hidden md:flex items-center gap-1 relative" id="nav-search">
+            <form action="/" method="get" class="flex items-center">
+              <input type="text" name="q"
+                     value="{% block search_query %}{% endblock %}"
+                     placeholder="Cari Gunpla..."
+                     class="w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     hx-get="/produk/search/"
+                     hx-trigger="keyup changed delay:300ms[target.value.length >= 2], keyup changed[target.value.length < 2]"
+                     hx-target="#search-dropdown"
+                     hx-include="[name='q']"
+                     autocomplete="off">
+              <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-r-lg hover:bg-blue-700">
+                Cari
+              </button>
+            </form>
+            <div id="search-dropdown" class="absolute top-full left-0 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-1"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 text-sm">
           {% if user.is_authenticated %}
-            <a href="{% url 'cart:index' %}" class="relative">
+            <a href="/cart/" class="relative flex items-center gap-1 text-gray-700 hover:text-blue-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m4-9v9m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
               Keranjang
               {% if cart_count > 0 %}
-                <span class="ml-1 bg-blue-600 text-white text-xs rounded-full px-1.5">{{ cart_count }}</span>
+                <span class="bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {{ cart_count }}
+                </span>
               {% endif %}
             </a>
-            <a href="{% url 'accounts:profile' %}">{{ user.first_name|default:user.email }}</a>
+            <a href="{% url 'accounts:profile' %}" class="text-gray-700 hover:text-blue-600">
+              {{ user.first_name|default:user.email }}
+            </a>
             <form method="post" action="{% url 'accounts:logout' %}">
               {% csrf_token %}
               <button type="submit" class="text-gray-500 hover:text-gray-700">Keluar</button>
             </form>
           {% else %}
-            <a href="{% url 'accounts:login' %}">Masuk</a>
-            <a href="{% url 'accounts:register' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Daftar</a>
+            <a href="{% url 'accounts:login' %}" class="text-gray-700 hover:text-blue-600">Masuk</a>
+            <a href="{% url 'accounts:register' %}"
+               class="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700">
+              Daftar
+            </a>
           {% endif %}
         </div>
+
       </div>
     </div>
   </nav>
 
   {% if messages %}
-    <div class="max-w-7xl mx-auto px-4 pt-4">
-      {% for message in messages %}
-        <div class="p-3 mb-2 rounded-lg text-sm
-          {% if message.tags == 'error' %}bg-red-50 text-red-700
-          {% elif message.tags == 'success' %}bg-green-50 text-green-700
-          {% else %}bg-blue-50 text-blue-700{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
+  <div class="max-w-7xl mx-auto px-4 pt-4 space-y-2">
+    {% for message in messages %}
+    <div class="p-3 rounded-lg text-sm flex items-center justify-between
+      {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+      {% elif message.tags == 'success' %}bg-green-50 text-green-700 border border-green-200
+      {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+      {{ message }}
     </div>
+    {% endfor %}
+  </div>
   {% endif %}
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="border-t border-gray-200 mt-16 py-8 text-center text-sm text-gray-500">
+  <footer class="border-t border-gray-200 mt-16 py-8 text-center text-sm text-gray-400">
     &copy; 2026 HaroHUB — Portfolio Project
   </footer>
 

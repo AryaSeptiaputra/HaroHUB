@@ -1,0 +1,4 @@
+<option value="">Semua Seri</option>
+{% for s in series %}
+<option value="{{ s.slug }}">{{ s.name }}</option>
+{% endfor %}

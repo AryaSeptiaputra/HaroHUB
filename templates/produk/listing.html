@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load harohub_extras %}
+
+{% block title %}Katalog Gunpla — HaroHUB{% endblock %}
+{% block search_query %}{{ filters.q }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row gap-6">
+
+  {# ── Sidebar Filter ── #}
+  <aside class="w-full lg:w-64 flex-shrink-0">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 sticky top-24">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-gray-800">Filter</h2>
+        {% if has_filters %}
+        <button onclick="resetFilters()" class="text-xs text-blue-600 hover:underline">Reset semua</button>
+        {% endif %}
+      </div>
+
+      <form method="get" id="filter-form">
+        {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+
+        {# Grade #}
+        <div class="mb-5">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Grade</h3>
+          <div class="space-y-1.5">
+            {% for grade in grades %}
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+              <input type="checkbox" name="grade" value="{{ grade.slug }}"
+                     {% if grade.slug in filters.grade %}checked{% endif %}
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              {{ grade.name }}
+              {% if grade.scale %}<span class="text-xs text-gray-400">({{ grade.scale }})</span>{% endif %}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# Timeline #}
+        <div class="mb-5">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Timeline / Universe</h3>
+          <select name="timeline"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  hx-get="/produk/series/"
+                  hx-trigger="change"
+                  hx-include="[name='timeline']"
+                  hx-target="#series-select">
+            <option value="">Semua Universe</option>
+            {% for timeline in timelines %}
+            <option value="{{ timeline.slug }}" {% if filters.timeline == timeline.slug %}selected{% endif %}>
+              {{ timeline.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# Series — dependent select #}
+        <div class="mb-5">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Seri</h3>
+          <select name="series" id="series-select"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  {% if not filters.timeline %}disabled{% endif %}>
+            <option value="">Semua Seri</option>
+            {% for s in series_for_timeline %}
+            <option value="{{ s.slug }}" {% if filters.series == s.slug %}selected{% endif %}>
+              {{ s.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# Harga #}
+        <div class="mb-5">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Rentang Harga</h3>
+          <div class="flex gap-2 items-center">
+            <input type="number" name="price_min" placeholder="Min"
+                   value="{{ filters.price_min }}"
+                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                   min="0" step="10000">
+            <span class="text-gray-400 text-xs">–</span>
+            <input type="number" name="price_max" placeholder="Max"
+                   value="{{ filters.price_max }}"
+                   class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                   min="0" step="10000">
+          </div>
+        </div>
+
+        {# Ketersediaan #}
+        <div class="mb-6">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Ketersediaan</h3>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="radio" name="status" value=""
+                     {% if not filters.status %}checked{% endif %}
+                     class="text-blue-600 focus:ring-blue-500">
+              Semua
+            </label>
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="radio" name="status" value="ACTIVE"
+                     {% if filters.status == 'ACTIVE' %}checked{% endif %}
+                     class="text-blue-600 focus:ring-blue-500">
+              Ready Stock
+            </label>
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="radio" name="status" value="PRE_ORDER"
+                     {% if filters.status == 'PRE_ORDER' %}checked{% endif %}
+                     class="text-blue-600 focus:ring-blue-500">
+              Pre-order
+            </label>
+          </div>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+          Terapkan Filter
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  {# ── Main Content ── #}
+  <div class="flex-1 min-w-0">
+
+    {# Active filter chips #}
+    {% if has_filters %}
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for slug in filters.grade %}
+        {% for grade in grades %}{% if grade.slug == slug %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          {{ grade.name }}
+          <button onclick="removeParam('grade', '{{ slug }}')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+        {% endif %}{% endfor %}
+      {% endfor %}
+      {% if filters.timeline %}
+        {% for tl in timelines %}{% if tl.slug == filters.timeline %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          {{ tl.name }}
+          <button onclick="removeParam('timeline')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+        {% endif %}{% endfor %}
+      {% endif %}
+      {% if filters.series %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          Seri: {{ filters.series }}
+          <button onclick="removeParam('series')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+      {% endif %}
+      {% if filters.price_min or filters.price_max %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          Harga: {% if filters.price_min %}{{ filters.price_min|rupiah }}{% else %}0{% endif %}
+          –
+          {% if filters.price_max %}{{ filters.price_max|rupiah }}{% else %}∞{% endif %}
+          <button onclick="removeParam('price_min');removeParam('price_max')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+      {% endif %}
+      {% if filters.status %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          {% if filters.status == 'ACTIVE' %}Ready Stock{% else %}Pre-order{% endif %}
+          <button onclick="removeParam('status')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+      {% endif %}
+      {% if filters.q %}
+        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full border border-blue-200">
+          "{{ filters.q }}"
+          <button onclick="removeParam('q')" class="ml-0.5 hover:text-blue-900">&times;</button>
+        </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Result count #}
+    <p class="text-sm text-gray-500 mb-4">
+      {% if total_count %}
+        {{ total_count }} produk ditemukan
+      {% endif %}
+    </p>
+
+    {# Product Grid #}
+    {% if page_obj.object_list %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for product in page_obj %}
+      <a href="{% url 'produk:detail' product.slug %}"
+         class="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-blue-300 transition-all">
+        {# Thumbnail #}
+        <div class="aspect-square bg-gray-100 overflow-hidden">
+          {% with img=product.primary_image %}
+          {% if img %}
+            <img src="{{ img.image.url }}"
+                 alt="{{ img.alt_text|default:product.name }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-gray-300">
+              <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+
+        <div class="p-3">
+          {# Grade badge #}
+          <span class="inline-block text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded mb-1.5">
+            {{ product.grade.name }}
+          </span>
+          {# Status badge #}
+          {% if product.status == 'PRE_ORDER' %}
+          <span class="inline-block text-xs font-semibold bg-orange-100 text-orange-700 px-2 py-0.5 rounded mb-1.5 ml-1">
+            Pre-order
+          </span>
+          {% elif product.stock == 0 %}
+          <span class="inline-block text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded mb-1.5 ml-1">
+            Habis
+          </span>
+          {% endif %}
+
+          <h3 class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-2 group-hover:text-blue-600">
+            {{ product.name }}
+          </h3>
+          <p class="text-sm font-semibold text-blue-700">{{ product.price|rupiah }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    {# Pagination #}
+    {% if page_obj.has_other_pages %}
+    <div class="flex justify-center gap-1 mt-8">
+      {% if page_obj.has_previous %}
+        <a href="{% url_with_page page_obj.previous_page_number %}"
+           class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">←</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a href="{% url_with_page num %}"
+             class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <a href="{% url_with_page page_obj.next_page_number %}"
+           class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">→</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    {# Empty state #}
+    <div class="text-center py-20 text-gray-400">
+      <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-lg font-medium text-gray-500">Produk tidak ditemukan</p>
+      <p class="text-sm mt-1">Coba ubah atau reset filter pencarian.</p>
+      {% if has_filters %}
+      <button onclick="resetFilters()" class="mt-4 text-sm text-blue-600 hover:underline">Reset filter</button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>{# end main #}
+</div>
+
+<script>
+// Enable series select when timeline is selected, disable when cleared
+document.addEventListener('htmx:afterSwap', function(e) {
+  if (e.detail.target.id === 'series-select') {
+    const select = document.getElementById('series-select');
+    const timeline = document.querySelector('[name=timeline]');
+    select.disabled = !timeline || !timeline.value;
+  }
+});
+</script>
+{% endblock %}

@@ -6,8 +6,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/', include('apps.accounts.urls')),
+    path('cart/', include('apps.cart.urls')),
+    path('order/', include('apps.order.urls')),
+    path('rekomendasi/', include('apps.rekomendasi.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    # produk last — root path '/' harus match listing
+    path('', include('apps.produk.urls')),
 ]
 
 if settings.DEBUG:

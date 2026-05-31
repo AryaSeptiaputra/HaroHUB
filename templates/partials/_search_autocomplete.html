@@ -1,0 +1,34 @@
+{% load harohub_extras %}
+{% if products %}
+<ul class="py-1">
+  {% for product in products %}
+  <li>
+    <a href="/produk/{{ product.slug }}/"
+       class="flex items-center gap-3 px-3 py-2 hover:bg-blue-50 transition">
+      {# Thumbnail 40×40 #}
+      <div class="w-10 h-10 flex-shrink-0 rounded bg-gray-100 overflow-hidden">
+        {% with img=product.primary_image %}
+        {% if img %}
+          <img src="{{ img.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+        {% endif %}
+        {% endwith %}
+      </div>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-gray-800 truncate">{{ product.name }}</p>
+        <span class="text-xs text-gray-500">{{ product.grade.name }} · {{ product.price|rupiah }}</span>
+      </div>
+    </a>
+  </li>
+  {% endfor %}
+  <li class="border-t border-gray-100 mt-1">
+    <a href="/?q={{ q }}"
+       class="block px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 text-center">
+      Lihat semua hasil untuk "{{ q }}" →
+    </a>
+  </li>
+</ul>
+{% elif q %}
+<p class="px-3 py-3 text-sm text-gray-400 text-center">Tidak ditemukan untuk "{{ q }}"</p>
+{% endif %}
