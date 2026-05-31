@@ -1,0 +1,2 @@
+class CheckoutError(Exception):
+    pass
