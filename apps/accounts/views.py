@@ -1,9 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import RegistrationForm, LoginForm
+from .forms import AddressForm, LoginForm, ProfileForm, RegistrationForm
+from .models import Address
 
 
 def register_view(request):
@@ -13,8 +15,8 @@ def register_view(request):
     if request.method == 'POST' and form.is_valid():
         user = form.save()
         login(request, user)
-        messages.success(request, 'Akun berhasil dibuat.')
-        return redirect('/')
+        messages.success(request, 'Akun berhasil dibuat. Selamat datang!')
+        return redirect('accounts:profile')
     return render(request, 'accounts/register.html', {'form': form})
 
 
@@ -36,10 +38,77 @@ def login_view(request):
 
 
 def logout_view(request):
-    logout(request)
+    if request.method == 'POST':
+        logout(request)
     return redirect('/')
 
 
 @login_required
 def profile_view(request):
-    return render(request, 'accounts/profile.html')
+    addresses = request.user.addresses.all().order_by('-is_default', 'recipient_name')
+    return render(request, 'accounts/profile.html', {'addresses': addresses})
+
+
+@login_required
+def profile_edit_view(request):
+    form = ProfileForm(request.POST or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profil berhasil diperbarui.')
+        return redirect('accounts:profile')
+    return render(request, 'accounts/profile_edit.html', {'form': form})
+
+
+@login_required
+def address_create_view(request):
+    form = AddressForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        address = form.save(commit=False)
+        address.user = request.user
+        with transaction.atomic():
+            if address.is_default:
+                request.user.addresses.update(is_default=False)
+            address.save()
+        messages.success(request, 'Alamat berhasil ditambahkan.')
+        return redirect('accounts:profile')
+    return render(request, 'accounts/address_form.html', {'form': form, 'action': 'Tambah Alamat'})
+
+
+@login_required
+def address_update_view(request, pk):
+    address = get_object_or_404(Address, pk=pk, user=request.user)
+    form = AddressForm(request.POST or None, instance=address)
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            if form.cleaned_data.get('is_default'):
+                request.user.addresses.exclude(pk=pk).update(is_default=False)
+            form.save()
+        messages.success(request, 'Alamat berhasil diperbarui.')
+        return redirect('accounts:profile')
+    return render(request, 'accounts/address_form.html', {
+        'form': form,
+        'action': 'Edit Alamat',
+        'address': address,
+    })
+
+
+@login_required
+def address_delete_view(request, pk):
+    address = get_object_or_404(Address, pk=pk, user=request.user)
+    if request.method == 'POST':
+        address.delete()
+        messages.success(request, 'Alamat berhasil dihapus.')
+        return redirect('accounts:profile')
+    return render(request, 'accounts/address_confirm_delete.html', {'address': address})
+
+
+@login_required
+def address_set_default_view(request, pk):
+    if request.method == 'POST':
+        address = get_object_or_404(Address, pk=pk, user=request.user)
+        with transaction.atomic():
+            request.user.addresses.update(is_default=False)
+            address.is_default = True
+            address.save(update_fields=['is_default'])
+        messages.success(request, f'"{address.recipient_name}" dijadikan alamat utama.')
+    return redirect('accounts:profile')

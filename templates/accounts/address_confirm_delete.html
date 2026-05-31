@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Hapus Alamat — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <div class="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+    <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </div>
+    <h1 class="text-xl font-bold text-gray-900 mb-2">Hapus Alamat?</h1>
+    <p class="text-sm text-gray-600 mb-1">
+      <span class="font-medium">{{ address.recipient_name }}</span>
+    </p>
+    <p class="text-sm text-gray-500 mb-6">{{ address.full_address }}, {{ address.city }}</p>
+
+    <div class="flex gap-3">
+      <form method="post" class="flex-1">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition">
+          Ya, Hapus
+        </button>
+      </form>
+      <a href="{% url 'accounts:profile' %}"
+         class="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50 text-center">
+        Batal
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

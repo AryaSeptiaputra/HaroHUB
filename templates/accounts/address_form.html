@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <div class="mb-6">
+    <a href="{% url 'accounts:profile' %}" class="text-sm text-gray-400 hover:text-gray-600">
+      ← Kembali ke Profil
+    </a>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-gray-200 p-8">
+    <h1 class="text-xl font-bold text-gray-900 mb-6">{{ action }}</h1>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {# Hidden Maps fields #}
+      {{ form.place_id }}
+      {{ form.latitude }}
+      {{ form.longitude }}
+
+      <div class="space-y-4">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Nama Penerima <span class="text-red-400">*</span>
+            </label>
+            {{ form.recipient_name }}
+            {% if form.recipient_name.errors %}
+              <p class="text-xs text-red-500 mt-1">{{ form.recipient_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Nomor HP <span class="text-red-400">*</span>
+            </label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <p class="text-xs text-red-500 mt-1">{{ form.phone.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Alamat Lengkap <span class="text-red-400">*</span>
+          </label>
+          {{ form.full_address }}
+          {% if form.full_address.errors %}
+            <p class="text-xs text-red-500 mt-1">{{ form.full_address.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Kota <span class="text-red-400">*</span>
+            </label>
+            {{ form.city }}
+            {% if form.city.errors %}
+              <p class="text-xs text-red-500 mt-1">{{ form.city.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Kode Pos <span class="text-red-400">*</span>
+            </label>
+            {{ form.postal_code }}
+            {% if form.postal_code.errors %}
+              <p class="text-xs text-red-500 mt-1">{{ form.postal_code.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Kurir</label>
+          {{ form.notes }}
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          {{ form.is_default }}
+          Jadikan alamat utama
+        </label>
+
+      </div>
+
+      <div class="flex gap-3 mt-8">
+        <button type="submit"
+                class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition">
+          Simpan
+        </button>
+        <a href="{% url 'accounts:profile' %}"
+           class="px-6 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50 text-center">
+          Batal
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
