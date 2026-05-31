@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -100,7 +101,11 @@ def address_create_view(request):
             address.save()
         messages.success(request, 'Alamat berhasil ditambahkan.')
         return redirect('accounts:profile')
-    return render(request, 'accounts/address_form.html', {'form': form, 'action': 'Tambah Alamat'})
+    return render(request, 'accounts/address_form.html', {
+        'form': form,
+        'action': 'Tambah Alamat',
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY_FRONTEND,
+    })
 
 
 @login_required
@@ -118,6 +123,7 @@ def address_update_view(request, pk):
         'form': form,
         'action': 'Edit Alamat',
         'address': address,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY_FRONTEND,
     })
 
 

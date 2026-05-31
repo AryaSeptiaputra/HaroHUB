@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import Address, User
@@ -224,3 +224,28 @@ class AddressViewTest(TestCase):
         addr2.refresh_from_db()
         self.assertFalse(self.address.is_default)
         self.assertTrue(addr2.is_default)
+
+
+class AddressMapTest(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+
+    @override_settings(GOOGLE_MAPS_API_KEY_FRONTEND='')
+    def test_shows_graceful_note_without_key(self):
+        r = self.client.get('/accounts/addresses/add/')
+        self.assertContains(r, 'GOOGLE_MAPS_API_KEY_FRONTEND')
+        self.assertNotContains(r, 'maps.googleapis.com')
+
+    @override_settings(GOOGLE_MAPS_API_KEY_FRONTEND='test-key-123')
+    def test_shows_map_with_key(self):
+        r = self.client.get('/accounts/addresses/add/')
+        self.assertContains(r, 'address-map')
+        self.assertContains(r, 'maps.googleapis.com')
+        self.assertContains(r, 'test-key-123')
+
+    @override_settings(GOOGLE_MAPS_API_KEY_FRONTEND='test-key-123')
+    def test_map_present_on_edit_page(self):
+        addr = make_address(self.user)
+        r = self.client.get(f'/accounts/addresses/{addr.pk}/edit/')
+        self.assertContains(r, 'address-map')

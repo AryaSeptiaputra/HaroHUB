@@ -16,7 +16,7 @@
     <form method="post" novalidate>
       {% csrf_token %}
 
-      {# Hidden Maps fields #}
+      {# Hidden Maps fields — diisi oleh interaksi peta #}
       {{ form.place_id }}
       {{ form.latitude }}
       {{ form.longitude }}
@@ -42,6 +42,29 @@
               <p class="text-xs text-red-500 mt-1">{{ form.phone.errors.0 }}</p>
             {% endif %}
           </div>
+        </div>
+
+        {# ── Pin Lokasi (Google Maps Platform) ── #}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Pin Lokasi</label>
+          {% if google_maps_api_key %}
+            <input type="text" id="map-search" autocomplete="off"
+                   placeholder="Cari alamat atau tempat…"
+                   class="input-field w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2">
+            <div id="address-map"
+                 class="w-full h-64 rounded-xl border border-gray-200 bg-gray-100"></div>
+            <p class="text-xs text-gray-400 mt-1">
+              Cari lokasi lalu geser pin untuk presisi. Alamat, kota, dan kode pos akan terisi otomatis — tetap bisa kamu sunting.
+            </p>
+            <p id="map-pinned" class="text-xs text-green-600 mt-1 {% if not form.latitude.value %}hidden{% endif %}">
+              ✓ Lokasi sudah dipin.
+            </p>
+          {% else %}
+            <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-xs text-gray-500">
+              Pin lokasi via Google Maps belum aktif — set <code class="font-mono">GOOGLE_MAPS_API_KEY_FRONTEND</code> di <code class="font-mono">.env</code>.
+              Untuk saat ini isi alamat secara manual di bawah.
+            </div>
+          {% endif %}
         </div>
 
         <div>
@@ -100,4 +123,104 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if google_maps_api_key %}
+<script>
+  // Cegah Enter di kotak pencarian men-submit form
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.id === 'map-search') e.preventDefault();
+  });
+
+  window.initAddressMap = function () {
+    const DEFAULT = { lat: -6.2088, lng: 106.8456 }; // Jakarta
+
+    const $ = (id) => document.getElementById(id);
+    const latEl    = $('id_latitude');
+    const lngEl    = $('id_longitude');
+    const placeEl  = $('id_place_id');
+    const fullEl   = $('id_full_address');
+    const cityEl   = $('id_city');
+    const postalEl = $('id_postal_code');
+    const searchEl = $('map-search');
+    const pinnedEl = $('map-pinned');
+
+    const hasCoords = latEl.value && lngEl.value;
+    const start = hasCoords
+      ? { lat: parseFloat(latEl.value), lng: parseFloat(lngEl.value) }
+      : DEFAULT;
+
+    const map = new google.maps.Map($('address-map'), {
+      center: start,
+      zoom: hasCoords ? 16 : 11,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+    const marker = new google.maps.Marker({ map, position: start, draggable: true });
+    const geocoder = new google.maps.Geocoder();
+
+    function setCoords(latLng) {
+      latEl.value = latLng.lat().toFixed(6);
+      lngEl.value = latLng.lng().toFixed(6);
+      if (pinnedEl) pinnedEl.classList.remove('hidden');
+    }
+
+    function fillFromPlace(place) {
+      if (place.place_id) placeEl.value = place.place_id;
+      if (place.formatted_address) fullEl.value = place.formatted_address;
+      let city = '', postal = '';
+      (place.address_components || []).forEach(function (c) {
+        if (c.types.includes('administrative_area_level_2') || c.types.includes('locality')) {
+          if (!city) city = c.long_name;
+        }
+        if (c.types.includes('postal_code')) postal = c.short_name;
+      });
+      if (city) cityEl.value = city;
+      if (postal) postalEl.value = postal;
+    }
+
+    function reverseGeocode(latLng) {
+      setCoords(latLng);
+      geocoder.geocode({ location: latLng }, function (results, status) {
+        if (status === 'OK' && results[0]) fillFromPlace(results[0]);
+      });
+    }
+
+    // Places Autocomplete (dibatasi Indonesia)
+    const ac = new google.maps.places.Autocomplete(searchEl, {
+      componentRestrictions: { country: 'id' },
+      fields: ['place_id', 'geometry', 'formatted_address', 'address_components'],
+    });
+    ac.bindTo('bounds', map);
+    ac.addListener('place_changed', function () {
+      const place = ac.getPlace();
+      if (!place.geometry) return;
+      map.setCenter(place.geometry.location);
+      map.setZoom(16);
+      marker.setPosition(place.geometry.location);
+      setCoords(place.geometry.location);
+      fillFromPlace(place);
+    });
+
+    // Geser pin / klik peta → reverse geocode
+    marker.addListener('dragend', function (e) { reverseGeocode(e.latLng); });
+    map.addListener('click', function (e) {
+      marker.setPosition(e.latLng);
+      reverseGeocode(e.latLng);
+    });
+  };
+
+  window.gm_authFailure = function () {
+    const el = document.getElementById('address-map');
+    if (el) el.innerHTML =
+      '<div class="w-full h-full flex items-center justify-center text-xs text-red-500 p-4 text-center">' +
+      'Gagal memuat Google Maps (API key tidak valid / belum di-authorize untuk domain ini). Isi alamat manual.</div>';
+  };
+</script>
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initAddressMap&language=id&region=ID">
+</script>
+{% endif %}
 {% endblock %}
