@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load harohub_extras %}
+
+{% block title %}{{ order.order_number }} — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  {# Header #}
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <a href="{% url 'order:list' %}" class="text-sm text-gray-400 hover:text-gray-600">← Pesanan Saya</a>
+      <h1 class="text-2xl font-bold text-gray-900 mt-1 font-mono">{{ order.order_number }}</h1>
+      <p class="text-sm text-gray-400">{{ order.created_at|date:"d M Y, H:i" }}</p>
+    </div>
+    <span class="text-sm font-semibold px-3 py-1.5 rounded-full
+      {% if order.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+      {% elif order.status == 'PAID' %}bg-blue-100 text-blue-700
+      {% elif order.status == 'PROCESSING' %}bg-indigo-100 text-indigo-700
+      {% elif order.status == 'SHIPPED' %}bg-purple-100 text-purple-700
+      {% elif order.status == 'COMPLETED' %}bg-green-100 text-green-700
+      {% elif order.status == 'CANCELLED' %}bg-gray-100 text-gray-500
+      {% endif %}">
+      {{ order.get_status_display }}
+    </span>
+  </div>
+
+  {# Status timeline #}
+  <div class="bg-white rounded-2xl border border-gray-200 p-5 mb-5">
+    <div class="flex items-center gap-0 text-xs">
+      {% for step_val, step_label in order.status.choices %}
+      {% if step_val != 'CANCELLED' %}
+      {% endfor %}
+      {% for step_val, step_label in order.get_status_display.choices %}{% endfor %}
+      {% comment %}Simple linear timeline{% endcomment %}
+      {% for s, l in order.status.choices %}{% endfor %}
+    </div>
+    {# Simplified timeline #}
+    <div class="flex items-center gap-1">
+      {% for s, l in order.status|default:""|make_list %}{% endfor %}
+      {% with statuses="PENDING,PAID,PROCESSING,SHIPPED,COMPLETED" %}
+      {% for s in statuses.split %}{% endfor %}
+      {% endwith %}
+      {# Manual timeline steps #}
+      {% for step in "PENDING,PAID,PROCESSING,SHIPPED,COMPLETED"|split:"," %}{% endfor %}
+      <div class="flex items-center flex-1 gap-1 text-xs">
+        {% for step, label in order.status.choices %}{% endfor %}
+      </div>
+    </div>
+    {# Simplified: just show timestamps #}
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-500">
+      <div>
+        <span class="font-medium text-gray-700">Dibuat:</span>
+        {{ order.created_at|date:"d M Y H:i" }}
+      </div>
+      {% if order.payment.paid_at %}
+      <div>
+        <span class="font-medium text-gray-700">Dibayar:</span>
+        {{ order.payment.paid_at|date:"d M Y H:i" }}
+      </div>
+      {% endif %}
+      {% if order.shipped_at %}
+      <div>
+        <span class="font-medium text-gray-700">Dikirim:</span>
+        {{ order.shipped_at|date:"d M Y H:i" }}
+      </div>
+      {% endif %}
+      {% if order.completed_at %}
+      <div>
+        <span class="font-medium text-gray-700">Selesai:</span>
+        {{ order.completed_at|date:"d M Y H:i" }}
+      </div>
+      {% endif %}
+      {% if order.cancelled_at %}
+      <div class="col-span-2 text-red-500">
+        <span class="font-medium">Dibatalkan:</span>
+        {{ order.cancelled_at|date:"d M Y H:i" }}
+        {% if order.cancellation_reason %}
+          — {{ order.cancellation_reason }}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Items #}
+  <div class="bg-white rounded-2xl border border-gray-200 p-5 mb-5">
+    <h2 class="font-semibold text-gray-800 mb-3">Produk Dipesan</h2>
+    <div class="space-y-3">
+      {% for item in items %}
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+          {% if item.product_image %}
+            <img src="{{ item.product_image }}" class="w-full h-full object-cover" alt="{{ item.product_name }}">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+          {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-800 truncate">{{ item.product_name }}</p>
+          <p class="text-xs text-gray-400">{{ item.price_at_purchase|rupiah }} × {{ item.quantity }}</p>
+        </div>
+        <p class="text-sm font-semibold text-gray-700 flex-shrink-0">{{ item.subtotal|rupiah }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="border-t border-gray-100 mt-4 pt-3 space-y-1.5 text-sm">
+      <div class="flex justify-between text-gray-500">
+        <span>Subtotal</span><span>{{ order.subtotal|rupiah }}</span>
+      </div>
+      <div class="flex justify-between text-gray-500">
+        <span>Ongkos Kirim</span><span>{{ order.shipping_cost|rupiah }}</span>
+      </div>
+      <div class="flex justify-between font-bold text-gray-900 text-base pt-1">
+        <span>Total</span><span class="text-blue-700">{{ order.total|rupiah }}</span>
+      </div>
+    </div>
+  </div>
+
+  {# Alamat & Pembayaran side by side #}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+    <div class="bg-white rounded-2xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-800 mb-2">Alamat Pengiriman</h2>
+      <p class="text-sm font-medium text-gray-700">{{ order.shipping_recipient_name }}</p>
+      <p class="text-sm text-gray-500">{{ order.shipping_phone }}</p>
+      <p class="text-sm text-gray-600 mt-1">{{ order.shipping_full_address }}</p>
+      <p class="text-sm text-gray-500">{{ order.shipping_city }}, {{ order.shipping_postal_code }}</p>
+      {% if order.shipping_notes %}
+        <p class="text-xs text-gray-400 mt-1 italic">{{ order.shipping_notes }}</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-800 mb-2">Pembayaran</h2>
+      <p class="text-sm text-gray-600">
+        <span class="font-medium">Metode:</span> {{ order.payment.get_method_display }}
+      </p>
+      <p class="text-sm text-gray-600">
+        <span class="font-medium">Status:</span> {{ order.payment.get_status_display }}
+      </p>
+      {% if order.payment.transaction_ref %}
+      <p class="text-sm text-gray-600 font-mono text-xs mt-1">
+        Ref: {{ order.payment.transaction_ref }}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Actions #}
+  <div class="flex gap-3">
+    {% if order.status == 'PENDING' %}
+      <a href="{% url 'order:payment' order.order_number %}"
+         class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+        Bayar Sekarang
+      </a>
+    {% endif %}
+    {% if order.is_cancellable %}
+      <a href="{% url 'order:cancel' order.order_number %}"
+         class="px-6 py-2.5 border border-red-300 text-red-600 rounded-xl text-sm hover:bg-red-50 transition">
+        Batalkan Pesanan
+      </a>
+    {% endif %}
+    <a href="/" class="text-sm text-gray-400 hover:text-gray-600 self-center ml-auto">
+      Lanjut Belanja →
+    </a>
+  </div>
+
+</div>
+{% endblock %}

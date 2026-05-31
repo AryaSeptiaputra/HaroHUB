@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load harohub_extras %}
+
+{% block title %}Checkout — HaroHUB{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
+
+  <form method="post" id="checkout-form">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      {# ── Kiri: Form ── #}
+      <div class="lg:col-span-2 space-y-6">
+
+        {# Pilih Alamat #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+          <h2 class="font-semibold text-gray-800 mb-4">Alamat Pengiriman</h2>
+          <div class="space-y-3">
+            {% for address in addresses %}
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="radio" name="address_id" value="{{ address.pk }}"
+                     {% if address.is_default or forloop.first %}checked{% endif %}
+                     class="mt-1 text-blue-600 focus:ring-blue-500"
+                     hx-get="{% url 'order:shipping_preview' %}"
+                     hx-trigger="change"
+                     hx-include="[name='address_id']"
+                     hx-target="#shipping-preview">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-gray-800">{{ address.recipient_name }}</p>
+                  {% if address.is_default %}
+                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Utama</span>
+                  {% endif %}
+                </div>
+                <p class="text-sm text-gray-500">{{ address.phone }}</p>
+                <p class="text-sm text-gray-600">{{ address.full_address }}, {{ address.city }} {{ address.postal_code }}</p>
+                {% if address.notes %}
+                  <p class="text-xs text-gray-400 italic">{{ address.notes }}</p>
+                {% endif %}
+                {% if address.city|lower not in available_cities %}
+                  <p class="text-xs text-red-500 mt-1">
+                    ⚠ Kota ini belum tersedia untuk pengiriman
+                  </p>
+                {% endif %}
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="mt-4 border-t border-gray-100 pt-3">
+            <a href="{% url 'accounts:address_create' %}"
+               class="text-sm text-blue-600 hover:underline">+ Tambah alamat baru</a>
+          </div>
+        </div>
+
+        {# Metode Pembayaran #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+          <h2 class="font-semibold text-gray-800 mb-4">Metode Pembayaran</h2>
+          <div class="grid grid-cols-2 gap-3">
+            {% for value, label in payment_methods %}
+            <label class="flex items-center gap-3 border border-gray-200 rounded-xl p-3 cursor-pointer hover:border-blue-300 transition">
+              <input type="radio" name="payment_method" value="{{ value }}"
+                     {% if forloop.first %}checked{% endif %}
+                     class="text-blue-600 focus:ring-blue-500">
+              <span class="text-sm font-medium text-gray-700">{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      {# ── Kanan: Ringkasan ── #}
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl border border-gray-200 p-5 sticky top-24">
+          <h2 class="font-semibold text-gray-800 mb-3">Ringkasan Pesanan</h2>
+
+          {# Item list #}
+          <div class="space-y-2 mb-4">
+            {% for item in items %}
+            <div class="flex items-center gap-2 text-sm">
+              <div class="w-8 h-8 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
+                {% with img=item.product.primary_image %}
+                {% if img %}
+                  <img src="{{ img.image.url }}" class="w-full h-full object-cover">
+                {% endif %}
+                {% endwith %}
+              </div>
+              <span class="flex-1 truncate text-gray-700">{{ item.product.name }}</span>
+              <span class="text-gray-500 flex-shrink-0">×{{ item.quantity }}</span>
+              <span class="font-medium flex-shrink-0">{{ item.subtotal|rupiah }}</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="border-t border-gray-100 pt-3 space-y-1.5 text-sm">
+            <div class="flex justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span>{{ cart.total|rupiah }}</span>
+            </div>
+
+            {# Shipping preview — diupdate via HTMX saat alamat dipilih #}
+            <div id="shipping-preview">
+              {% with default_address=addresses.0 %}
+              {% with rate=rates|default_if_none:None %}
+              {% if default_address %}
+                {% with city_key=default_address.city|lower %}
+                {% if city_key in available_cities %}
+                  {% for city, r in rates.items %}{% if city == city_key %}
+                  <div class="flex justify-between text-gray-600">
+                    <span>Ongkir ({{ r.estimated_days }} hari)</span>
+                    <span>{{ r.cost|rupiah }}</span>
+                  </div>
+                  {% endif %}{% endfor %}
+                {% else %}
+                  <div class="text-xs text-red-500">Kota tidak tersedia untuk pengiriman</div>
+                {% endif %}
+                {% endwith %}
+              {% endif %}
+              {% endwith %}
+              {% endwith %}
+            </div>
+          </div>
+
+          <button type="submit"
+                  class="w-full mt-5 bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition">
+            Buat Pesanan →
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</div>
+{% endblock %}

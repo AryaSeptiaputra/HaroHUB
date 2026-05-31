@@ -1,0 +1,9 @@
+{% load harohub_extras %}
+{% if rate %}
+<div class="flex justify-between text-gray-600 text-sm">
+  <span>Ongkir ({{ rate.estimated_days }} hari)</span>
+  <span>{{ rate.cost|rupiah }}</span>
+</div>
+{% else %}
+<p class="text-xs text-red-500">Kota ini belum tersedia untuk pengiriman.</p>
+{% endif %}
