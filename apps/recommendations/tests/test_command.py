@@ -1,3 +1,4 @@
+"""Integration tests untuk compute_recommendations management command."""
 from django.core.management import call_command
 from django.test import TestCase
 

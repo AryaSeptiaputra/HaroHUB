@@ -15,9 +15,28 @@ DEMO_PROFILES = [
 
 
 class Command(BaseCommand):
+    """Management command untuk seed synthetic behavior events untuk demo recommendation engine.
+
+    Membuat 4 demo user dengan profil preferensi berbeda, lalu mengisi BehaviorEvent
+    dengan pola VIEW/WISHLIST/PURCHASE yang realistis sesuai preferensi masing-masing.
+    Dirancang untuk dijalankan setelah ``seed_catalog`` agar produk sudah tersedia.
+
+    Pola event per user:
+    - 6 produk matching → masing-masing 2× VIEW.
+    - 3 produk matching → WISHLIST.
+    - 2 produk matching → PURCHASE.
+    - 3 produk non-matching → VIEW (untuk variasi data).
+    """
+
     help = 'Seed synthetic behavior events untuk demo recommendation engine.'
 
     def handle(self, *args, **options):
+        """Buat demo user dan insert synthetic events ke BehaviorEvent.
+
+        Args:
+            *args: Argumen positional dari management command (tidak dipakai).
+            **options: Opsi dari management command (termasuk ``verbosity``).
+        """
         total_events = 0
 
         for email, password, prefs in DEMO_PROFILES:

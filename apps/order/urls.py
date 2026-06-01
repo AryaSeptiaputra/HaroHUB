@@ -1,3 +1,4 @@
+"""URL configuration untuk app order (namespace: order)."""
 from django.urls import path
 
 from . import views

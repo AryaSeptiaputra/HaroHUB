@@ -1,3 +1,4 @@
+"""View keranjang belanja dengan dukungan HTMX partial refresh untuk update/remove item."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -10,18 +11,46 @@ from .models import Cart, CartItem
 
 
 def _get_or_create_cart(user):
+    """Ambil atau buat Cart untuk user; dipanggil di setiap cart action.
+
+    Args:
+        user (User): User yang sedang login.
+
+    Returns:
+        Cart: Instance Cart milik user (baru atau yang sudah ada).
+    """
     cart, _ = Cart.objects.get_or_create(user=user)
     return cart
 
 
 def _items_qs(cart):
+    """Kembalikan QuerySet CartItem dengan relasi yang dibutuhkan template.
+
+    Args:
+        cart (Cart): Keranjang yang items-nya ingin diambil.
+
+    Returns:
+        QuerySet: CartItem dengan ``select_related`` produk/grade/series dan ``prefetch_related`` images.
+    """
     return (cart.items
             .select_related('product__grade', 'product__series__timeline')
             .prefetch_related('product__images'))
 
 
 def _htmx_cart_refresh(request, cart):
-    """Kembalikan partial cart body + OOB badge untuk semua HTMX cart actions."""
+    """Kembalikan partial cart body + OOB badge untuk semua HTMX cart actions.
+
+    Merender dua HTML fragment:
+    1. ``_cart_body.html`` — konten daftar item.
+    2. ``cart-badge`` dengan ``hx-swap-oob="true"`` — update badge jumlah item di navbar.
+
+    Args:
+        request (HttpRequest): HTTP request objek (dibutuhkan untuk render_to_string).
+        cart (Cart): Keranjang yang baru saja diperbarui.
+
+    Returns:
+        HttpResponse: Response berisi dua HTML fragment yang digabung.
+    """
     cart.refresh_from_db()
     items = list(_items_qs(cart))
     count = cart.item_count
@@ -41,6 +70,16 @@ def _htmx_cart_refresh(request, cart):
 
 @login_required
 def cart_index(request):
+    """Tampilkan halaman keranjang belanja dengan semua item milik user.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+
+    Returns:
+        HttpResponse: Render ``cart/index.html`` dengan konteks:
+            - ``cart``: Instance Cart user.
+            - ``items``: List CartItem dengan relasi produk.
+    """
     cart = _get_or_create_cart(request.user)
     items = list(_items_qs(cart))
     return render(request, 'cart/index.html', {'cart': cart, 'items': items})
@@ -48,6 +87,21 @@ def cart_index(request):
 
 @login_required
 def add_to_cart(request, product_id):
+    """Tambah produk ke keranjang; increment quantity jika produk sudah ada.
+
+    Quantity di-cap oleh stok produk untuk status ACTIVE. Produk DISCONTINUED
+    atau habis stok (ACTIVE, stock=0) ditolak. Hanya menerima POST.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        product_id (int): Primary key produk yang akan ditambahkan.
+
+    Returns:
+        HttpResponse: Redirect ke halaman sebelumnya (``HTTP_REFERER``) atau root.
+
+    Raises:
+        Http404: Jika produk tidak ditemukan atau statusnya DISCONTINUED.
+    """
     if request.method != 'POST':
         return redirect('/')
 
@@ -89,6 +143,21 @@ def add_to_cart(request, product_id):
 
 @login_required
 def update_item(request, item_id):
+    """Update quantity satu CartItem; hapus item jika quantity ≤ 0.
+
+    Mendukung HTMX: jika request mengandung header ``HX-Request``, kembalikan
+    partial refresh (body + badge), bukan redirect.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        item_id (int): Primary key CartItem yang akan diperbarui.
+
+    Returns:
+        HttpResponse: Partial HTMX refresh jika HTMX, atau redirect ke cart index.
+
+    Raises:
+        Http404: Jika CartItem tidak ditemukan atau bukan milik request.user.
+    """
     if request.method != 'POST':
         return redirect('cart:index')
 
@@ -116,6 +185,21 @@ def update_item(request, item_id):
 
 @login_required
 def remove_item(request, item_id):
+    """Hapus satu CartItem dari keranjang.
+
+    Mendukung HTMX: jika request mengandung header ``HX-Request``, kembalikan
+    partial refresh (body + badge), bukan redirect.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        item_id (int): Primary key CartItem yang akan dihapus.
+
+    Returns:
+        HttpResponse: Partial HTMX refresh jika HTMX, atau redirect ke cart index.
+
+    Raises:
+        Http404: Jika CartItem tidak ditemukan atau bukan milik request.user.
+    """
     if request.method != 'POST':
         return redirect('cart:index')
 

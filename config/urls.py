@@ -1,3 +1,4 @@
+"""URL root configuration — mounts semua app ke path masing-masing."""
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings

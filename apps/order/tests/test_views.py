@@ -1,3 +1,4 @@
+"""Integration tests untuk order views: checkout, pembayaran, daftar pesanan, dan pembatalan."""
 from django.test import TestCase
 
 from apps.accounts.models import Address, User

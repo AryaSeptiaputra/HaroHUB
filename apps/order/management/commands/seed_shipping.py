@@ -1,3 +1,4 @@
+"""Management command untuk seed ongkos kirim mock (flat-rate) per kota Indonesia."""
 from django.core.management.base import BaseCommand
 
 from apps.order.models import ShippingRate
@@ -23,9 +24,22 @@ RATES = [
 
 
 class Command(BaseCommand):
+    """Management command untuk seed data ongkos kirim mock per kota.
+
+    Menggunakan ``get_or_create`` sehingga aman dijalankan berulang kali (idempotent).
+    Data ini menggantikan integrasi RajaOngkir yang sengaja di-skip dalam MVP.
+    Lookup ongkir menggunakan ``city__iexact`` (case-insensitive).
+    """
+
     help = 'Seed ongkos kirim mock per kota.'
 
     def handle(self, *args, **options):
+        """Insert data ongkos kirim untuk 16 kota besar Indonesia.
+
+        Args:
+            *args: Argumen positional dari management command (tidak dipakai).
+            **options: Opsi dari management command (termasuk ``verbosity``).
+        """
         count = 0
         for city, cost, days in RATES:
             _, created = ShippingRate.objects.get_or_create(

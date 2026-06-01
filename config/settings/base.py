@@ -1,3 +1,4 @@
+"""Shared Django settings untuk semua environment — dibaca via django-environ."""
 import environ
 from pathlib import Path
 

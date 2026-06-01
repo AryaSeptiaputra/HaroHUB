@@ -1,3 +1,4 @@
+"""AppConfig untuk app accounts."""
 from django.apps import AppConfig
 
 

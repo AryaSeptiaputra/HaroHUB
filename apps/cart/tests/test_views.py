@@ -1,3 +1,4 @@
+"""Integration tests untuk cart views: tambah, update quantity, hapus item, dan HTMX refresh."""
 from decimal import Decimal
 
 from django.test import TestCase

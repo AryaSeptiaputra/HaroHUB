@@ -1,3 +1,4 @@
+"""URL configuration untuk app accounts (namespace: accounts)."""
 from django.urls import path
 
 from . import views

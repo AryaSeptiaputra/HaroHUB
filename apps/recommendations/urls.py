@@ -1,3 +1,4 @@
+"""URL configuration untuk app recommendations (namespace: recommendations)."""
 from django.urls import path
 
 from . import views

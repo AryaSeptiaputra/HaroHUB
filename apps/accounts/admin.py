@@ -1,3 +1,4 @@
+"""Registrasi admin untuk User dan Address, dengan inline address di halaman user."""
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
@@ -5,6 +6,8 @@ from .models import User, Address
 
 
 class AddressInline(admin.TabularInline):
+    """Inline tabular untuk menampilkan dan mengedit alamat langsung di halaman User."""
+
     model = Address
     extra = 0
     fields = ('recipient_name', 'phone', 'city', 'is_default')
@@ -13,6 +16,12 @@ class AddressInline(admin.TabularInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    """Admin untuk model User dengan fieldset kustom dan inline alamat.
+
+    Menggantikan ``BaseUserAdmin`` bawaan Django agar kompatibel dengan
+    model yang tidak memiliki ``username``.
+    """
+
     ordering = ('email',)
     list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active')
     list_filter = ('is_staff', 'is_active')
@@ -35,6 +44,8 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
+    """Admin untuk model Address dengan filter kota dan pencarian nama/email."""
+
     list_display = ('recipient_name', 'user', 'city', 'is_default')
     list_filter = ('is_default', 'city')
     search_fields = ('recipient_name', 'user__email', 'city')

@@ -1,3 +1,4 @@
+"""View listing produk dengan filter, detail produk, autocomplete search, dan lazy-load series."""
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
@@ -6,6 +7,32 @@ from .models import Grade, Product, ProductStatus, Series, Timeline
 
 
 def listing_view(request):
+    """Halaman listing produk dengan filter multi-kriteria dan paginasi.
+
+    Mendukung filter: grade (multi-value), timeline, series, rentang harga,
+    status ketersediaan, dan keyword search (name + description).
+
+    Args:
+        request (HttpRequest): HTTP request dengan query params:
+            - ``grade`` (list[str]): Slug grade, bisa lebih dari satu.
+            - ``timeline`` (str): Slug timeline.
+            - ``series`` (str): Slug series.
+            - ``price_min`` (str): Harga minimum (integer).
+            - ``price_max`` (str): Harga maksimum (integer).
+            - ``status`` (str): ``ACTIVE`` atau ``PRE_ORDER``.
+            - ``q`` (str): Keyword pencarian nama/deskripsi.
+            - ``page`` (str): Nomor halaman paginasi.
+
+    Returns:
+        HttpResponse: Render ``catalog/listing.html`` dengan konteks:
+            - ``page_obj``: Objek paginasi berisi produk.
+            - ``grades``: Semua Grade untuk sidebar filter.
+            - ``timelines``: Semua Timeline untuk sidebar filter.
+            - ``series_for_timeline``: Series yang tersedia untuk timeline yang dipilih.
+            - ``filters``: Dict nilai filter aktif saat ini.
+            - ``has_filters``: Boolean; True jika ada filter aktif.
+            - ``total_count``: Total produk yang cocok sebelum paginasi.
+    """
     qs = Product.objects.for_listing().order_by('-created_at')
 
     grade_slugs = request.GET.getlist('grade')
@@ -69,6 +96,25 @@ def listing_view(request):
 
 
 def detail_view(request, slug):
+    """Tampilkan halaman detail produk dan catat event VIEW jika user login.
+
+    Produk DISCONTINUED tidak dapat diakses (404). Untuk user yang login,
+    event VIEW dicatat ke BehaviorEvent dan status wishlist dikembalikan ke template.
+
+    Args:
+        request (HttpRequest): HTTP request objek.
+        slug (str): Slug unik produk yang akan ditampilkan.
+
+    Returns:
+        HttpResponse: Render ``catalog/detail.html`` dengan konteks:
+            - ``product``: Instance Product.
+            - ``images``: List semua gambar produk.
+            - ``primary_image``: Gambar utama produk.
+            - ``is_wishlisted``: Boolean; True jika produk ada di wishlist user.
+
+    Raises:
+        Http404: Jika produk dengan slug tidak ditemukan atau statusnya DISCONTINUED.
+    """
     product = get_object_or_404(
         Product.objects
                .filter(status__in=[ProductStatus.ACTIVE, ProductStatus.PRE_ORDER])
@@ -93,6 +139,20 @@ def detail_view(request, slug):
 
 
 def search_autocomplete_view(request):
+    """HTMX endpoint — kembalikan partial autocomplete hasil pencarian nama produk.
+
+    Hanya memproses query dengan panjang minimal 2 karakter untuk menghindari
+    hasil yang terlalu luas. Mengembalikan maksimal 5 produk.
+
+    Args:
+        request (HttpRequest): HTTP request dengan query param:
+            - ``q`` (str): Keyword pencarian nama produk.
+
+    Returns:
+        HttpResponse: Render partial ``partials/_search_autocomplete.html`` dengan konteks:
+            - ``products``: List produk yang cocok (maks 5), atau list kosong.
+            - ``q``: Keyword pencarian yang digunakan.
+    """
     q = request.GET.get('q', '').strip()
     products = []
     if len(q) >= 2:
@@ -107,6 +167,19 @@ def search_autocomplete_view(request):
 
 
 def series_for_timeline_view(request):
+    """HTMX endpoint — kembalikan daftar series untuk timeline tertentu.
+
+    Digunakan untuk lazy-load dropdown series di form filter listing
+    setelah user memilih timeline.
+
+    Args:
+        request (HttpRequest): HTTP request dengan query param:
+            - ``timeline`` (str): Slug timeline yang dipilih.
+
+    Returns:
+        HttpResponse: Render partial ``partials/_series_options.html`` dengan konteks:
+            - ``series``: QuerySet Series yang termasuk dalam timeline, atau list kosong.
+    """
     timeline_slug = request.GET.get('timeline', '').strip()
     series = []
     if timeline_slug:

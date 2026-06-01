@@ -1,3 +1,4 @@
+"""Management command untuk seed data referensi (timeline, series, grade) dan produk contoh."""
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
@@ -69,9 +70,27 @@ PRODUCTS = [
 
 
 class Command(BaseCommand):
+    """Management command untuk seed data referensi produk dan contoh produk Gunpla.
+
+    Menggunakan ``get_or_create`` sehingga aman dijalankan berulang kali (idempotent).
+    Urutan seed penting: Timeline → Series → Grade → Product.
+
+    Data yang di-seed:
+    - 7 Timeline (universe Gundam).
+    - 12 Series tersebar di berbagai timeline.
+    - 7 Grade (EG hingga Metal Build).
+    - 24 Product contoh dengan berbagai kombinasi grade dan series.
+    """
+
     help = 'Seed data referensi produk (grade, timeline, series) dan contoh produk.'
 
     def handle(self, *args, **options):
+        """Eksekusi seeding data referensi katalog secara berurutan.
+
+        Args:
+            *args: Argumen positional dari management command (tidak dipakai).
+            **options: Opsi dari management command (termasuk ``verbosity``).
+        """
         self.stdout.write('Seeding timelines...')
         timeline_map = {}
         for slug, name in TIMELINES:

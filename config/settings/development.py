@@ -1,3 +1,4 @@
+"""Settings override untuk development — DEBUG=True, SQLite sebagai fallback database."""
 from .base import *
 
 DEBUG = True

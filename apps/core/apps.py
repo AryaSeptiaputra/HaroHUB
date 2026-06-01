@@ -1,3 +1,4 @@
+"""AppConfig untuk app core — abstract models, tidak punya views/urls/migrations."""
 from django.apps import AppConfig
 
 

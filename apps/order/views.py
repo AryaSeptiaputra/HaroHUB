@@ -1,3 +1,4 @@
+"""View checkout, konfirmasi pembayaran, daftar pesanan, detail, dan pembatalan."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,6 +13,26 @@ from .services import cancel_order as svc_cancel, checkout as svc_checkout, conf
 
 @login_required
 def checkout_view(request):
+    """Tampilkan form checkout dan proses pembuatan order.
+
+    GET: Tampilkan form dengan daftar alamat user, pilihan metode pembayaran,
+    dan preview ongkos kirim per kota. POST: Validasi input, panggil service
+    ``checkout()``, redirect ke halaman pembayaran.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+
+    Returns:
+        HttpResponse:
+            - Redirect ke ``cart:index`` jika cart kosong.
+            - Redirect ke ``accounts:address_create`` jika tidak punya alamat.
+            - Redirect ke ``order:payment`` jika POST berhasil.
+            - Redirect ke form checkout jika validasi gagal.
+            - Render ``order/checkout.html`` untuk GET.
+
+    Raises:
+        Http404: Jika Cart tidak ditemukan untuk user.
+    """
     cart = get_object_or_404(Cart, user=request.user)
 
     if not cart.items.exists():
@@ -65,6 +86,24 @@ def checkout_view(request):
 
 @login_required
 def payment_view(request, order_number):
+    """Tampilkan halaman pembayaran dan proses konfirmasi (mock).
+
+    Order yang sudah bukan PENDING di-redirect langsung ke detail. POST
+    memicu ``confirm_payment()`` yang mengubah status Payment dan Order.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        order_number (str): Nomor order berformat ``HH-YYYYMMDD-XXXX``.
+
+    Returns:
+        HttpResponse:
+            - Redirect ke ``order:detail`` jika order bukan PENDING.
+            - Redirect ke ``order:detail`` setelah konfirmasi berhasil.
+            - Render ``order/payment.html`` untuk GET.
+
+    Raises:
+        Http404: Jika order tidak ditemukan atau bukan milik request.user.
+    """
     order = get_object_or_404(Order, order_number=order_number, user=request.user)
 
     if order.status != OrderStatus.PENDING:
@@ -82,12 +121,35 @@ def payment_view(request, order_number):
 
 @login_required
 def order_list_view(request):
+    """Tampilkan daftar semua pesanan milik user diurutkan terbaru.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+
+    Returns:
+        HttpResponse: Render ``order/list.html`` dengan konteks:
+            - ``orders``: QuerySet Order user dengan prefetch items.
+    """
     orders = request.user.orders.prefetch_related('items').order_by('-created_at')
     return render(request, 'order/list.html', {'orders': orders})
 
 
 @login_required
 def order_detail_view(request, order_number):
+    """Tampilkan detail satu pesanan beserta item-itemnya.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        order_number (str): Nomor order berformat ``HH-YYYYMMDD-XXXX``.
+
+    Returns:
+        HttpResponse: Render ``order/detail.html`` dengan konteks:
+            - ``order``: Instance Order.
+            - ``items``: QuerySet OrderItem dengan relasi produk.
+
+    Raises:
+        Http404: Jika order tidak ditemukan atau bukan milik request.user.
+    """
     order = get_object_or_404(Order, order_number=order_number, user=request.user)
     items = order.items.select_related('product')
     return render(request, 'order/detail.html', {'order': order, 'items': items})
@@ -95,6 +157,24 @@ def order_detail_view(request, order_number):
 
 @login_required
 def cancel_order_view(request, order_number):
+    """Tampilkan konfirmasi dan proses pembatalan pesanan oleh user.
+
+    GET: Tampilkan halaman konfirmasi. POST: Panggil service ``cancel_order()``.
+    Order yang tidak bisa dibatalkan (SHIPPED/COMPLETED) menampilkan pesan error.
+
+    Args:
+        request (HttpRequest): HTTP request objek; user harus terautentikasi.
+        order_number (str): Nomor order berformat ``HH-YYYYMMDD-XXXX``.
+
+    Returns:
+        HttpResponse:
+            - Redirect ke ``order:detail`` dengan error jika tidak bisa dibatalkan.
+            - Redirect ke ``order:detail`` setelah berhasil dibatalkan.
+            - Render ``order/cancel_confirm.html`` untuk GET.
+
+    Raises:
+        Http404: Jika order tidak ditemukan atau bukan milik request.user.
+    """
     order = get_object_or_404(Order, order_number=order_number, user=request.user)
 
     if not order.is_cancellable:
@@ -111,7 +191,19 @@ def cancel_order_view(request, order_number):
 
 
 def shipping_preview_view(request):
-    """HTMX endpoint — kembalikan preview ongkir berdasarkan address_id."""
+    """HTMX endpoint — kembalikan preview ongkir berdasarkan address_id yang dipilih.
+
+    Tidak membutuhkan login; mengembalikan partial kosong jika user tidak login
+    atau address_id tidak valid.
+
+    Args:
+        request (HttpRequest): HTTP request dengan query param:
+            - ``address_id`` (str): Primary key Address yang dipilih di form checkout.
+
+    Returns:
+        HttpResponse: Render partial ``partials/_shipping_preview.html`` dengan konteks:
+            - ``rate``: Instance ShippingRate untuk kota address, atau None jika tidak ditemukan.
+    """
     rate = None
     if request.user.is_authenticated:
         address_id = request.GET.get('address_id', '')

@@ -1,3 +1,4 @@
+"""Integration tests untuk catalog views: listing dengan filter, detail produk, dan autocomplete."""
 from django.test import TestCase
 from django.urls import reverse
 

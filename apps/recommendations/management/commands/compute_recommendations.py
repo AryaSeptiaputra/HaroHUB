@@ -1,3 +1,4 @@
+"""Management command batch harian: compute F-28/F-29/F-30 dan tulis atomik ke tabel serve."""
 from collections import defaultdict
 
 from django.conf import settings
@@ -21,9 +22,33 @@ _COMPLETED_STATUSES = [
 
 
 class Command(BaseCommand):
+    """Management command untuk menghitung ulang semua tabel serve rekomendasi.
+
+    Menjalankan tiga komputasi dalam satu transaksi atomik:
+    - **F-28** ``ProductSimilarity``: skor kemiripan antar produk.
+    - **F-29** ``UserRecommendation``: rekomendasi personal per user.
+    - **F-30** ``ProductPopularity``: skor popularitas global.
+
+    Tabel serve yang lama di-truncate sebelum data baru di-insert (full rebuild).
+    Dijadwalkan cron harian jam 02:00.
+
+    Hyperparameter diambil dari ``settings.py``:
+    - ``RECOMMENDATION_WEIGHTS``: bobot event (VIEW/WISHLIST/PURCHASE).
+    - ``SIMILARITY_WEIGHTS``: bobot dimensi untuk F-28.
+    - ``RECOMMENDATION_DIMENSION_WEIGHTS``: bobot dimensi untuk F-29.
+    - ``SIMILARITY_TOP_K``: max kandidat serupa per produk.
+    - ``RECOMMENDATION_TOP_N``: max rekomendasi per user.
+    """
+
     help = 'Compute F-28 similarity, F-29 user recommendations, F-30 popularity.'
 
     def handle(self, *args, **options):
+        """Eksekusi penuh komputasi rekomendasi dan tulis hasilnya ke database.
+
+        Args:
+            *args: Argumen positional dari management command (tidak dipakai).
+            **options: Opsi dari management command (termasuk ``verbosity``).
+        """
         weights     = settings.RECOMMENDATION_WEIGHTS
         sim_weights = settings.SIMILARITY_WEIGHTS
         dim_weights = settings.RECOMMENDATION_DIMENSION_WEIGHTS

@@ -1,3 +1,4 @@
+"""AppConfig untuk app order."""
 from django.apps import AppConfig
 
 

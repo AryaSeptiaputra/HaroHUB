@@ -1,3 +1,4 @@
+"""URL configuration untuk app catalog (namespace: catalog)."""
 from django.urls import path
 
 from . import views

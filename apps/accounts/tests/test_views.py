@@ -1,3 +1,4 @@
+"""Integration tests untuk account views: register, login, logout, profil, wishlist, dan manajemen alamat."""
 from django.test import TestCase, override_settings
 from django.urls import reverse
 

@@ -1,3 +1,4 @@
+"""ASGI entrypoint untuk deployment async (Uvicorn, Daphne, dsb.)."""
 import os
 
 from django.core.asgi import get_asgi_application

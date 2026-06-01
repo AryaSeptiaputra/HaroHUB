@@ -1,3 +1,4 @@
+"""AppConfig untuk app common — validators, generators, templatetags, context_processors."""
 from django.apps import AppConfig
 
 

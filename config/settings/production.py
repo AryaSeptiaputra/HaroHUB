@@ -1,3 +1,4 @@
+"""Settings override untuk production — PostgreSQL, HTTPS enforced, whitenoise static files."""
 from .base import *
 
 DEBUG = False

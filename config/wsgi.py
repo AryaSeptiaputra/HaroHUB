@@ -1,3 +1,4 @@
+"""WSGI entrypoint untuk deployment sync (Gunicorn, uWSGI, dsb.)."""
 import os
 
 from django.core.wsgi import get_wsgi_application

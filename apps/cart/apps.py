@@ -1,3 +1,4 @@
+"""AppConfig untuk app cart."""
 from django.apps import AppConfig
 
 

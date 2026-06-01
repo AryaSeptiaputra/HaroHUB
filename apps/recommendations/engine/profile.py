@@ -1,3 +1,4 @@
+"""Engine F-29: bangun profil preferensi user dari event dan skor kandidat produk."""
 from .types import Event, ProductAttrs, PreferenceProfile, ScoredProduct
 
 
@@ -6,6 +7,25 @@ def build_profile(
     attrs_index: dict,
     weights: dict,
 ) -> PreferenceProfile:
+    """Bangun profil preferensi user dari riwayat event perilaku.
+
+    Setiap event diberi bobot sesuai jenis (VIEW/WISHLIST/PURCHASE) lalu diakumulasi
+    per dimensi (timeline, grade, series). Hasil akhir dinormalisasi dengan max-normalize
+    sehingga nilai tertinggi selalu 1.0.
+
+    Event dengan ``event_type`` yang tidak ada di ``weights`` (bobot 0) di-skip.
+    Event untuk produk yang tidak ada di ``attrs_index`` juga di-skip.
+
+    Args:
+        events (list[Event]): Semua event milik satu user.
+        attrs_index (dict[int, ProductAttrs]): Mapping ``product_id → ProductAttrs``
+            untuk semua produk aktif.
+        weights (dict): Bobot per event type, contoh: ``{'VIEW': 1, 'WISHLIST': 3, 'PURCHASE': 5}``.
+
+    Returns:
+        PreferenceProfile: Profil preferensi dengan skor per dimensi yang sudah dinormalisasi.
+            Dict kosong pada dimensi yang tidak ada event-nya sama sekali.
+    """
     timeline_scores: dict = {}
     grade_scores: dict = {}
     series_scores: dict = {}
@@ -20,6 +40,14 @@ def build_profile(
         series_scores[attrs.series_id] = series_scores.get(attrs.series_id, 0) + w
 
     def max_normalize(d: dict) -> dict:
+        """Normalisasi dict skor sehingga nilai terbesar menjadi 1.0.
+
+        Args:
+            d (dict): Dict ``id → raw_score`` yang akan dinormalisasi.
+
+        Returns:
+            dict: Dict ``id → normalized_score`` (0.0–1.0), atau dict kosong jika input kosong.
+        """
         if not d:
             return {}
         max_val = max(d.values())
@@ -39,6 +67,24 @@ def score_products(
     top_n: int,
     exclude_ids: set,
 ) -> list:
+    """Skor semua kandidat produk berdasarkan profil preferensi user.
+
+    Skor dihitung dengan mengalikan skor profil per dimensi dengan bobot dimensi.
+    Produk dengan skor 0 (tidak ada overlap dengan profil) tidak disertakan.
+    Reason ditentukan dari dimensi dengan kontribusi skor terbesar.
+
+    Args:
+        profile (PreferenceProfile): Profil preferensi user hasil ``build_profile()``.
+        candidates (list[ProductAttrs]): Semua produk kandidat untuk di-skor.
+        dim_weights (dict): Bobot per dimensi saat scoring,
+            contoh: ``{'series': 3, 'timeline': 2, 'grade': 1}``.
+        top_n (int): Jumlah maksimum produk yang dikembalikan.
+        exclude_ids (set[int]): Set ``product_id`` yang dikecualikan dari hasil
+            (biasanya produk yang sudah dibeli user).
+
+    Returns:
+        list[ScoredProduct]: List produk dengan skor, diurutkan skor tertinggi, maks ``top_n`` entri.
+    """
     scored = []
     for attrs in candidates:
         if attrs.id in exclude_ids:
